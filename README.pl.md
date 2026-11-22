@@ -18,6 +18,10 @@
   <a href="https://ko-fi.com/gmcoach"><img src="https://img.shields.io/badge/Ko--fi-wesprzyj-FF5E5B?logo=kofi&logoColor=white" alt="Wesprzyj na Ko-fi"></a>
 </p>
 
+<p align="center">
+  <img src="docs/screenshot-plan.png" alt="GM Coach pokazuje w czacie trening hipertrofii na Gym Monster" width="820">
+</p>
+
 ## Funkcje
 
 - **Historia treningów:** odczytuje ukończone sesje Speediance razem z seriami, obciążeniami i szczegółami.

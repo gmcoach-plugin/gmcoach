@@ -18,6 +18,10 @@
   <a href="https://ko-fi.com/gmcoach"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white" alt="Support on Ko-fi"></a>
 </p>
 
+<p align="center">
+  <img src="docs/screenshot-plan.png" alt="GM Coach showing a Gym Monster hypertrophy workout in a chat" width="820">
+</p>
+
 ## Features
 
 - **Workout history:** reads your completed Speediance sessions, including sets, loads and session details.
