@@ -24,9 +24,37 @@
 
 ## Funkcje
 
-- **Historia treningów:** odczytuje ukończone sesje Speediance razem z seriami, obciążeniami i szczegółami.
-- **Plany treningowe:** tworzy i edytuje programy Gym Monster: siłowe, czasowe i cardio, wyłącznie z ćwiczeń i akcesoriów, które potwierdzisz.
-- **Trening oparty na badaniach:** przed zaproponowaniem planu sprawdza jego założenia w aktualnych badaniach.
+### Planowanie
+
+- **Plany treningowe:** tworzy programy Gym Monster: siłowe, czasowe i cardio, wyłącznie z ćwiczeń i akcesoriów, które potwierdzisz, razem z dopasowaną rozgrzewką i rozciąganiem.
+- **Cykle wielotygodniowe:** planuje progresję i deload tydzień po tygodniu, z datami, i zapisuje cały cykl po jednym zatwierdzeniu. Przerwany zapis można bezpiecznie dokończyć.
+- **Smart RM i tryby oporu:** korzysta z presetów Gain Muscle, Stamina i Strength oraz trybów Standard, Chain i Eccentric albo ze stałego ciężaru dobranego na podstawie Twojego 1RM.
+- **Edycja zapisanych treningów:** zmienia przerwy, tryb oporu, ciężar lub kolejność ćwiczeń i przed zapisem pokazuje różnice.
+- **Kalendarz:** odczytuje kalendarz Speediance i dodaje zapisane treningi do wybranych dni.
+- **Czas sesji:** szacuje długość treningu i dopasowuje plan do czasu, którym dysponujesz.
+
+### Analiza i regeneracja
+
+- **Historia treningów:** odczytuje ukończone sesje z seriami, obciążeniami, tętnem, danymi z wioślarza i statystykami okresu.
+- **Porównanie sesji:** porównuje dwie ukończone sesje seria po serii.
+- **Dane o regeneracji:** odczytuje raporty zdrowotne Speediance, takie jak sen, HRV, zmęczenie i obciążenie mięśni, za Twoją zgodą.
+
+### Indywidualne prowadzenie
+
+- **Profil treningowy:** krótki wywiad zapisuje lokalnie Twoje cele, preferencje i ograniczenia.
+- **Plany z uwzględnieniem kontuzji:** bierze pod uwagę zgłoszone ograniczenia ruchowe.
+- **Sprzęt:** sprawdza Twoje akcesoria i wymagania każdego ćwiczenia oraz przeszukuje katalog ćwiczeń Gym Monster.
+- **Decyzje oparte na badaniach:** przeszukuje PubMed i łączy decyzje w planie z prawdziwymi źródłami.
+
+### Więcej
+
+- **Oficjalne treści:** przegląda oficjalne treningi i programy Speediance.
+- **Udostępnianie planu:** eksportuje plan do pliku, który można zaimportować na innym koncie.
+- **Kilka kont:** obsługuje kilka profili Speediance na jednym komputerze.
+- **Limit szablonów:** wykrywa pełną listę szablonów i proponuje usunięcie nieużywanych, wyłącznie za Twoją zgodą.
+
+### Bezpieczeństwo i prywatność
+
 - **Bezpieczny zapis:** pokazuje pełny podgląd planu i zapisuje go na koncie dopiero po Twoim wyraźnym potwierdzeniu.
 - **Lokalnie i prywatnie:** działa na Twoim komputerze, a hasło Speediance zostaje w systemowym magazynie haseł.
 

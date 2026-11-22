@@ -24,9 +24,37 @@
 
 ## Features
 
-- **Workout history:** reads your completed Speediance sessions, including sets, loads and session details.
-- **Training plans:** creates and edits Gym Monster programs for strength, timed exercises and cardio, using only exercises and accessories you confirm.
-- **Evidence-based coaching:** checks plan decisions against current research before suggesting them.
+### Planning
+
+- **Training plans:** creates Gym Monster programs for strength, timed exercises and cardio, using only exercises and accessories you confirm, with a matching warm-up and stretching.
+- **Multi-week cycles:** plans progression and deloads week by week, with dates, and saves the whole cycle after one approval. An interrupted save can be safely resumed.
+- **Smart RM and resistance modes:** uses the Gain Muscle, Stamina and Strength presets and the Standard, Chain and Eccentric modes, or a fixed load suggested from your 1RM.
+- **Editing saved workouts:** changes rest, resistance mode, load or exercise order and shows the differences before saving.
+- **Calendar:** reads your Speediance calendar and schedules saved workouts on chosen days.
+- **Session length:** estimates how long a workout takes and fits the plan to the time you have.
+
+### Analysis and recovery
+
+- **Workout history:** reads completed sessions with sets, loads, heart rate, rowing data and period statistics.
+- **Session comparison:** compares two completed sessions set by set.
+- **Recovery data:** reads Speediance health reports such as sleep, HRV, fatigue and muscle load, with your permission.
+
+### Personal coaching
+
+- **Training profile:** a short interview records your goals, preferences and limitations locally.
+- **Injury-aware plans:** takes reported movement limitations into account.
+- **Equipment:** checks your accessories and what each exercise needs, and searches the Gym Monster exercise catalogue.
+- **Research-backed decisions:** searches PubMed and links real sources to plan decisions.
+
+### More
+
+- **Official content:** browses official Speediance workouts and programs.
+- **Plan sharing:** exports a plan to a file that another account can import.
+- **Multiple accounts:** supports several Speediance profiles on one computer.
+- **Template limit:** detects a full template list and suggests unused templates to remove, only with your approval.
+
+### Safety and privacy
+
 - **Safe writes:** shows a full preview of every plan and saves it to your account only after your explicit confirmation.
 - **Local and private:** runs on your computer, and your Speediance password stays in the system password store.
 
