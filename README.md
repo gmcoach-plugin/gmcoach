@@ -27,7 +27,7 @@
 ### Planning
 
 - **Training plans:** creates Gym Monster programs for strength, timed exercises and cardio, using only exercises and accessories you confirm, with a matching warm-up and stretching.
-- **Multi-week cycles:** plans progression and deloads week by week, with dates, and saves the whole cycle after one approval. An interrupted save can be safely resumed.
+- **Multi-week cycles:** plans progression and deloads week by week, with dates, and saves the whole cycle after one approval.
 - **Smart RM and resistance modes:** uses the Gain Muscle, Stamina and Strength presets and the Standard, Chain and Eccentric modes, or a fixed load suggested from your 1RM.
 - **Editing saved workouts:** changes rest, resistance mode, load or exercise order and shows the differences before saving.
 - **Calendar:** reads your Speediance calendar and schedules saved workouts on chosen days.
@@ -58,11 +58,11 @@
 ### Safety and privacy
 
 - **Safe writes:** shows a full preview of every plan and saves it to your account only after your explicit confirmation.
-- **Interrupted saves:** if a save is interrupted, GM Coach checks your account before trying again, so a workout is never saved twice. A multi-week cycle continues from where it stopped.
+- **Interrupted saves:** if a save is interrupted, GM Coach checks your account before trying again, which prevents duplicate workouts. A multi-week cycle continues from where it stopped.
 - **Local memory:** remembers facts you ask it to keep, such as equipment or preferences, and forgets them when you ask.
 - **Local and private:** runs on your computer, and your Speediance password stays in the system password store.
 
-### How a new plan is built
+## How it works
 
 GM Coach works through clear steps and shows its progress while it prepares a plan:
 
@@ -86,7 +86,7 @@ When the plan is ready, GM Coach shows the full workout, explains its choices an
 ## Quick start
 
 1. Download the installer for your app from the [latest release](https://github.com/gmcoach-plugin/gmcoach/releases/latest).
-2. Verify the file against its `.sha256` checksum.
+2. Optionally, compare the file's SHA-256 checksum with the one shown in the release.
 3. Extract the whole archive and run `START-WINDOWS.cmd` (Codex) or `START-CLAUDE-WINDOWS.cmd` (Claude).
 4. Open a new chat and write: *"GM Coach, help me connect my Speediance account."*
 
@@ -98,7 +98,7 @@ You need a Speediance account and a Gym Monster. See the installation guide for 
 
 - Your Speediance password is stored only in your operating system's credential store (Windows Credential Manager, macOS Keychain or Linux Secret Service). Never share it in a chat.
 - The plugin reads your history and changes your account only after you allow it in the conversation.
-- The installers download dependencies from official sources and verify their checksums.
+- Any dependencies the installers download come from official sources and are verified with checksums.
 
 ## Reporting bugs and requesting features
 

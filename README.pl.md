@@ -27,7 +27,7 @@
 ### Planowanie
 
 - **Plany treningowe:** tworzy programy Gym Monster: siłowe, czasowe i cardio, wyłącznie z ćwiczeń i akcesoriów, które potwierdzisz, razem z dopasowaną rozgrzewką i rozciąganiem.
-- **Cykle wielotygodniowe:** planuje progresję i deload tydzień po tygodniu, z datami, i zapisuje cały cykl po jednym zatwierdzeniu. Przerwany zapis można bezpiecznie dokończyć.
+- **Cykle wielotygodniowe:** planuje progresję i deload tydzień po tygodniu, z datami, i zapisuje cały cykl po jednym zatwierdzeniu.
 - **Smart RM i tryby oporu:** korzysta z presetów Gain Muscle, Stamina i Strength oraz trybów Standard, Chain i Eccentric albo ze stałego ciężaru dobranego na podstawie Twojego 1RM.
 - **Edycja zapisanych treningów:** zmienia przerwy, tryb oporu, ciężar lub kolejność ćwiczeń i przed zapisem pokazuje różnice.
 - **Kalendarz:** odczytuje kalendarz Speediance i dodaje zapisane treningi do wybranych dni.
@@ -58,11 +58,11 @@
 ### Bezpieczeństwo i prywatność
 
 - **Bezpieczny zapis:** pokazuje pełny podgląd planu i zapisuje go na koncie dopiero po Twoim wyraźnym potwierdzeniu.
-- **Przerwany zapis:** jeśli zapis zostanie przerwany, GM Coach przed ponowną próbą sprawdza konto, więc trening nigdy nie zapisze się dwa razy. Cykl wielotygodniowy jest kontynuowany od miejsca przerwania.
-- **Pamięć lokalna:** zapamiętuje fakty, które każesz mu zachować, na przykład sprzęt albo preferencje, i usuwa je na Twoją prośbę.
+- **Przerwany zapis:** jeśli zapis zostanie przerwany, GM Coach przed ponowną próbą sprawdza konto, co chroni przed zdublowaniem treningu. Cykl wielotygodniowy jest kontynuowany od miejsca przerwania.
+- **Pamięć lokalna:** zapamiętuje informacje, o które poprosisz, na przykład sprzęt albo preferencje, i usuwa je na Twoje życzenie.
 - **Lokalnie i prywatnie:** działa na Twoim komputerze, a hasło Speediance zostaje w systemowym magazynie haseł.
 
-### Jak powstaje nowy plan
+## Jak to działa
 
 GM Coach przechodzi przez kolejne kroki i pokazuje postęp podczas przygotowywania planu:
 
@@ -86,7 +86,7 @@ Gdy plan jest gotowy, GM Coach pokazuje cały trening, wyjaśnia swoje wybory i 
 ## Szybki start
 
 1. Pobierz instalator dla swojej aplikacji z [najnowszego wydania](https://github.com/gmcoach-plugin/gmcoach/releases/latest).
-2. Porównaj sumę kontrolną pliku z plikiem `.sha256`.
+2. Opcjonalnie porównaj sumę SHA-256 pliku z sumą widoczną w wydaniu.
 3. Rozpakuj całe archiwum i uruchom `START-WINDOWS.cmd` (Codex) albo `START-CLAUDE-WINDOWS.cmd` (Claude).
 4. Otwórz nowy czat i napisz: *„GM Coach, pomóż mi połączyć moje konto Speediance”.*
 
@@ -98,7 +98,7 @@ Potrzebujesz konta Speediance i urządzenia Gym Monster. Instalację na macOS i 
 
 - Hasło Speediance jest przechowywane wyłącznie w systemowym magazynie poświadczeń: Menedżerze poświadczeń Windows, Pęku kluczy macOS albo Secret Service na Linuksie. Nie podawaj go w czacie.
 - Plugin odczytuje historię i zmienia dane na koncie tylko po Twojej zgodzie w rozmowie.
-- Instalatory pobierają zależności z oficjalnych źródeł i sprawdzają ich sumy kontrolne.
+- Jeśli instalator pobiera zależności, robi to z oficjalnych źródeł i sprawdza ich sumy kontrolne.
 
 ## Zgłaszanie błędów i propozycji
 
