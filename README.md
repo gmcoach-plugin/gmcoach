@@ -30,6 +30,14 @@
 - **Safe writes:** shows a full preview of every plan and saves it to your account only after your explicit confirmation.
 - **Local and private:** runs on your computer, and your Speediance password stays in the system password store.
 
+### How a new plan is built
+
+GM Coach works through clear steps and shows its progress while it prepares a plan:
+
+<p align="center">
+  <img src="docs/gm-coach-plan-steps.png" alt="GM Coach plan-building steps: profile and intake audit, history and calendar, exercises and doses, science review and preview, plan for approval" width="330">
+</p>
+
 ## Supported apps
 
 | App | Platform | Installation guide |

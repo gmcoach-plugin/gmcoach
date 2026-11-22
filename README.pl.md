@@ -30,6 +30,14 @@
 - **Bezpieczny zapis:** pokazuje pełny podgląd planu i zapisuje go na koncie dopiero po Twoim wyraźnym potwierdzeniu.
 - **Lokalnie i prywatnie:** działa na Twoim komputerze, a hasło Speediance zostaje w systemowym magazynie haseł.
 
+### Jak powstaje nowy plan
+
+GM Coach przechodzi przez kolejne kroki i pokazuje postęp podczas przygotowywania planu:
+
+<p align="center">
+  <img src="docs/gm-coach-plan-steps.png" alt="Kroki przygotowania planu w GM Coach: profil i audyt wywiadu, historia i kalendarz, ćwiczenia i dawki, ocena naukowa i podgląd, plan do akceptacji" width="330">
+</p>
+
 ## Obsługiwane aplikacje
 
 | Aplikacja | System | Instrukcja instalacji |
