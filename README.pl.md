@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-plan.png" alt="GM Coach pokazuje w czacie trening hipertrofii na Gym Monster" width="820">
+  <img src="docs/screenshot-plan.png" alt="GM Coach w Claude pokazuje jutrzejszy trening na Gym Monster" width="640">
 </p>
 
 ## Funkcje

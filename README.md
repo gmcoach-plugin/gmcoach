@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-plan.png" alt="GM Coach showing a Gym Monster hypertrophy workout in a chat" width="820">
+  <img src="docs/screenshot-plan.png" alt="GM Coach in Claude showing tomorrow's Gym Monster workout" width="640">
 </p>
 
 ## Features
