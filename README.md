@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot-plan.png" alt="GM Coach in Claude showing tomorrow's Gym Monster workout" width="640">
+  <img src="docs/gm-coach-claude-workout.png" alt="GM Coach in Claude showing tomorrow's Gym Monster workout" width="640">
 </p>
 
 ## Features
