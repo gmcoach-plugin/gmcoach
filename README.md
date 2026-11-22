@@ -54,6 +54,8 @@ GM Coach works through clear steps and shows its progress while it prepares a pl
 
 You need a Speediance account and a Gym Monster. See the installation guide for macOS, Linux, updates and uninstalling.
 
+**Tested devices:** Gym Monster **GM1** and **GM2**.
+
 ## Privacy and security
 
 - Your Speediance password is stored only in your operating system's credential store (Windows Credential Manager, macOS Keychain or Linux Secret Service). Never share it in a chat.

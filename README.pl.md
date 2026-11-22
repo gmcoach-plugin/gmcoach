@@ -54,6 +54,8 @@ GM Coach przechodzi przez kolejne kroki i pokazuje postęp podczas przygotowywan
 
 Potrzebujesz konta Speediance i urządzenia Gym Monster. Instalację na macOS i Linux, aktualizację oraz odinstalowanie opisuje instrukcja instalacji.
 
+**Sprawdzone urządzenia:** Gym Monster **GM1** i **GM2**.
+
 ## Prywatność i bezpieczeństwo
 
 - Hasło Speediance jest przechowywane wyłącznie w systemowym magazynie poświadczeń: Menedżerze poświadczeń Windows, Pęku kluczy macOS albo Secret Service na Linuksie. Nie podawaj go w czacie.
