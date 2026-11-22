@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <b>English</b> · <a href="README.pl.md">Polski</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/gmcoach-plugin/gmcoach/releases/latest"><img src="https://img.shields.io/github/v/release/gmcoach-plugin/gmcoach?label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/gmcoach-plugin/gmcoach" alt="MIT license"></a>
   <a href="https://ko-fi.com/gmcoach"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white" alt="Support on Ko-fi"></a>
