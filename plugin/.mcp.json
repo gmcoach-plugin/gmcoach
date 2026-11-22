@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "gm-coach": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./mcp_server.mjs"],
+      "cwd": "${PLUGIN_ROOT}"
+    }
+  }
+}

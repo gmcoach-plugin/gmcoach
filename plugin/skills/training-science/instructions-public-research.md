@@ -1,0 +1,11 @@
+# Wyłącznie publiczny odczyt badań
+
+Używaj tego krótkiego modułu tylko wtedy, gdy cała prośba dotyczy wyszukania publicznych badań albo odczytu ich abstraktów, ewentualnie z lokalną diagnostyką wersji GM Coach. Nie pobieraj konta Speediance, profilu, historii, zdrowia ani katalogu ćwiczeń. Nie projektuj, nie oceniaj i nie zapisuj planu w tej ścieżce. Gdy zakres rozszerzy się o osobę, dawkę, rekomendację, plan lub zapis, przeczytaj właściwy pełny albo lean moduł **przed** tym działaniem.
+
+Jeśli wymagane jest sprawdzenie wersji, wykonaj lokalne `speediance_list_accounts` albo dostępne `gm_coach_get_local_diagnostics` dokładnie raz i użyj wyłącznie `serverDiagnostics`. Nie interpretuj listy profili jako zgody na odczyt konta. Przy `restartRequired=true` lub nierównych wersjach załadowanej i zainstalowanej zatrzymaj zależny test; nie próbuj logowania ani innej wtyczki.
+
+Przed użyciem wyniku MCP sprawdź `isError` i jawny błąd JSON-RPC. Dla publicznego wyszukiwania użyj `gm_coach_search_training_research` z 1–8 kategoriami i `output_view="compact"`; kontekst zapytania ma być krótki, bez składni PubMed, a `maxResultsPerQuery` mieści się w 1–5. Zapisz rzeczywiste `batchId`, PMID, tytuł, rok, typ publikacji, URL i `hasAbstract`. Gdy potrzebujesz treści, odczytaj tylko wybrane zachowane abstrakty przez `gm_coach_read_selected_research_abstracts`, każdy PMID raz; przy odczycie stronicowanym połącz wszystkie fragmenty bez luk. Zachowaj pochodzenie źródła. Brak wyniku lub abstraktu opisz jawnie.
+
+Jeśli narzędzie jest niedostępne albo nie znajduje właściwego rekordu, wyszukaj badanie w internecie na stronach PubMed, czasopism lub oficjalnych organizacji naukowych. Odczytaj pełny dostępny abstrakt lub tekst, sprawdź DOI/PMID i oznacz wynik jako źródło znalezione poza GM Coach, bez `batchId`. Przy późniejszym planowaniu takie źródło wymaga osobnej rejestracji przez działającą instancję GM Coach, aby wejść do naukowej walidacji planu; sam odczyt z przeglądarki jej nie zastępuje.
+
+Wynik wyszukiwania i dopasowanie słów nie są dowodem semantycznego poparcia tezy ani naukowym zatwierdzeniem dawki. Do wykorzystania przy realnym planie wymagane są osobna ocena źródła, świeża bramka dla faktycznych decyzji i końcowa walidacja całego planu według modułu planowania. Nie przenoś samego `batchId` jako zgody.

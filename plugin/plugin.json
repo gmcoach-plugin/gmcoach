@@ -1,0 +1,47 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "gm-coach",
+  "version": "1.0.691+codex.20261121",
+  "description": "GM Coach ma własne narzędzia MCP do połączenia z kontem Speediance, odczytu historii treningów oraz planowania treningu siłowego na Gym Monster.",
+  "author": {
+    "name": "GM Coach contributors"
+  },
+  "license": "MIT",
+  "keywords": [
+    "speediance",
+    "gym-monster",
+    "strength-training",
+    "fitness",
+    "mcp",
+    "training-science"
+  ],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "interface": {
+        "displayName": "GM Coach",
+        "shortDescription": "Własne połączenie MCP Speediance: historia, sprzęt i plan.",
+        "longDescription": "GM Coach prowadzi wywiad przed planem, korzysta z MCP Speediance i badań PubMed. Lokalny dostęp wymaga aktywnego serwera GM Coach w danym czacie. Jeśli brakuje narzędzi GM Coach, nie zastępuj ich innym pluginem.",
+        "developerName": "GM Coach contributors",
+        "category": "Health & Fitness",
+        "composerIcon": "./assets/gm-coach-icon.svg",
+        "logo": "./assets/gm-coach-icon.svg",
+        "logoDark": "./assets/gm-coach-icon.svg",
+        "defaultPrompt": "GM Coach, pokaż mój ostatni trening Speediance ze szczegółami. Nie używaj innego pluginu.",
+        "capabilities": [
+          "Read completed Speediance workouts and session details",
+          "Read exercise-specific statistics; use explicit 1RM fields only for percentage calculations",
+          "Report actual set weights, account units, and API-reported training volume",
+          "List, edit, and delete saved daily workout templates with confirmation and verification",
+          "Search the Speediance exercise catalog",
+          "Preview and create Speediance programs after explicit confirmation",
+          "Plan training weeks and blocks around goals, session length, history, and injuries",
+          "Use confirmed Gym Monster attachments, mat exercises, and setup-aware supersets",
+          "Reuse an opt-in local training profile across coaching sessions with per-answer update dates",
+          "Coach resistance training using cited research and explain API mode limitations",
+          "Use GM Coach Speediance MCP for the user account; never substitute another plugin"
+        ]
+      }
+    }
+  }
+}

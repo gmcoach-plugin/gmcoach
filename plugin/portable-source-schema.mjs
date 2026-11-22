@@ -1,0 +1,15 @@
+const text={type:'string',minLength:1,maxLength:20000};
+const obj=(properties,required=Object.keys(properties))=>({type:'object',additionalProperties:false,properties,required});
+const list=(items,maxItems)=>({type:'array',items,maxItems});
+const strings=list(text,64);
+const integer=(minimum,maximum)=>({type:'integer',minimum,maximum});
+const set=obj({unit:{enum:['reps','seconds']},reps:integer(1,100),durationSeconds:integer(1,86400),side:{enum:[1,2]},mode:integer(1,3),restSeconds:integer(0,600),rirTarget:integer(0,5),weight:{type:'number',exclusiveMinimum:0},weightUnit:{enum:['kg','lb']},weightKg:{type:'number',exclusiveMinimum:0},sourceRmSelector:integer(1,20)},['unit','mode','restSeconds']);
+set.description='reps requires reps, forbids durationSeconds; seconds requires durationSeconds and forbids reps/RIR. Smart RM preserves explicit sourceRmSelector, no default. Manual requires weight+weightUnit; fixed-kg requires weightKg. Runtime enforces load/side pairing.';
+const exercise=obj({entryId:integer(1,1000000),id:integer(1,1000000000),actionLibraryId:integer(1,1000000000),title:text,section:{enum:['warmup','main','stretching']},loadType:{enum:['smart-rm','customize-manual','fixed-kg','bodyweight']},trainingGoal:{enum:['hypertrophy','strength','endurance']},smartRmPresetName:{enum:['Gain Muscle','Strength','Stamina']},unilateralPrescription:{enum:['explicit-sides','paired-symmetric']},sideTransitionSeconds:integer(1,30),sideTransitionRationale:{type:'string',minLength:1,maxLength:500},sets:{...list(set,100),minItems:1}},['entryId','id','actionLibraryId','title','section','loadType','sets']);
+const section=obj({status:{enum:['included','omitted']},instructions:{type:'array',items:text}});
+const block=obj({rounds:integer(1,100),transitionRestSeconds:integer(0,600),recoveryRestSeconds:integer(0,600),members:{...list(obj({exerciseId:integer(1,1000000),setupKey:{type:'string',pattern:'^[A-Za-z0-9._:-]{1,80}$'}}),3),minItems:2}},['members']);
+const evidence=obj(Object.fromEntries(['id','researchSourceId','supports','title','publicationDate','finding','population','limitations','url'].map(k=>[k,text]).concat([['researchBatchIds',strings],['coveredCategories',strings]])));
+const excerpt=obj({evidenceId:text,excerpt:text});
+const assessment=obj(Object.fromEntries(['evidenceId','reviewedValue','direction','interventionMatch','outcomeMatch','populationMatch','limitations','rationale'].map(k=>[k,text])));
+const decision=obj({...Object.fromEntries(['category','target','value','status','relationship','reasoning'].map(k=>[k,text])),evidenceIds:list(text,12),supportingExcerpts:list(excerpt,12),sourceAssessments:list(assessment,12)},['category','target','value','status','relationship','reasoning','evidenceIds','supportingExcerpts']);
+export const portableRawSourceSchema=obj({prescription:obj({name:{type:'string',minLength:1,maxLength:80},exercises:{...list(exercise,30),minItems:1},warmup:section,postWorkoutStretching:section,rationale:text,supersetBlocks:list(block,3)},['name','exercises']),research:obj({evidence:list(evidence,64),decisionEvidence:list(decision,1000)})});

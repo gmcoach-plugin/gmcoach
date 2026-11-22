@@ -1,0 +1,64 @@
+name: "🐞 Błąd / Bug report"
+description: "Zgłoś problem z GM Coach / Report a problem with GM Coach"
+title: "[Błąd / Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dziękuję za zgłoszenie! **Nie wklejaj hasła, e-maila, tokenów ani kluczy tunelu.**
+        Thanks for reporting! **Do not paste passwords, e-mail addresses, tokens or tunnel keys.**
+  - type: input
+    id: version
+    attributes:
+      label: "Wersja GM Coach / GM Coach version"
+      description: "Napisz w czacie: „GM Coach, pokaż lokalną diagnostykę wersji” i podaj pluginVersion. / Ask in chat: \"GM Coach, show the local version diagnostics\" and paste pluginVersion."
+      placeholder: "1.0.691+codex.20261121"
+    validations:
+      required: true
+  - type: dropdown
+    id: app
+    attributes:
+      label: "Aplikacja / App"
+      options:
+        - Codex
+        - ChatGPT (tunel / tunnel)
+        - Claude
+        - Claude Code
+        - "Instalator / Installer"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: "System"
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: "Co się stało? / What happened?"
+      description: "Co zrobiłeś, czego oczekiwałeś i co się stało? / What did you do, what did you expect, and what happened?"
+      placeholder: |
+        1. Napisałem / I wrote: ...
+        2. Oczekiwałem / I expected: ...
+        3. Stało się / Instead: ...
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: "Komunikat błędu / Error message"
+      description: "Wklej dokładny komunikat lub zrzut ekranu. Usuń z niego dane osobowe. / Paste the exact message or a screenshot. Remove personal data."
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: "Prywatność / Privacy"
+      options:
+        - label: "Zgłoszenie nie zawiera hasła, e-maila, tokenów ani kluczy. / This report contains no password, e-mail, tokens or keys."
+          required: true

@@ -1,0 +1,42 @@
+# Testy wykluczone z paczki
+
+Wymagaja prywatnych danych konta lub fixtures, ktorych nie dolaczono:
+
+- tests/accessory-confirmation-cycle.test.mjs
+- tests/accessory-confirmation-full-dispatch.test.mjs
+- tests/accessory-confirmation-public.test.mjs
+- tests/accessory-confirmation-single-transport.test.mjs
+- tests/auth-diagnostics.test.mjs
+- tests/bounded-health-transport.test.mjs
+- tests/client-version-negotiation.test.mjs
+- tests/coaching-memory.test.mjs
+- tests/coaching-profile.test.mjs
+- tests/completed-exercise-history.test.mjs
+- tests/completed-history-comparison-transport.test.mjs
+- tests/completed-session-reader.test.mjs
+- tests/cycle-draft-store.test.mjs
+- tests/equipment-order-real.test.mjs
+- tests/model-plan-ledger-instructions.test.mjs
+- tests/native-login.test.mjs
+- tests/period-statistics-public.test.mjs
+- tests/quicktest-legacy-pending.test.mjs
+- tests/recovery-context-integration.test.mjs
+- tests/reported-health-dispatch.test.mjs
+- tests/reported-session-summary-public.test.mjs
+- tests/saved-edit-late-expiry.test.mjs
+- tests/saved-edit-ramp-e2e.test.mjs
+- tests/saved-edit-real-readback.test.mjs
+- tests/saved-preset-display-page.test.mjs
+- tests/saved-response-header-diagnostics.test.mjs
+- tests/saved-template-unit-memory.test.mjs
+- tests/scientific-cycle-fixture.mjs
+- tests/server-log.test.mjs
+- tests/session-heart-transport.test.mjs
+- tests/session-rowing-transport.test.mjs
+- tests/static-protocol-context.test.mjs
+- tests/template-saving.test.mjs
+- tests/time-budget-late-transport.test.mjs
+- tests/training-cycle-audit.test.mjs
+- tests/training-cycle-preview.test.mjs
+- tests/training-evidence.test.mjs
+- tests/write-approval-replay.test.mjs

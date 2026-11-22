@@ -1,0 +1,21 @@
+name: "💡 Propozycja / Feature request"
+description: "Zaproponuj nową funkcję / Suggest a new feature"
+title: "[Propozycja / Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: "Co chcesz móc zrobić? / What would you like to do?"
+      description: "Opisz potrzebę i przykład użycia. / Describe the need and an example."
+    validations:
+      required: true
+  - type: dropdown
+    id: app
+    attributes:
+      label: "Aplikacja / App"
+      multiple: true
+      options:
+        - Codex
+        - ChatGPT
+        - Claude

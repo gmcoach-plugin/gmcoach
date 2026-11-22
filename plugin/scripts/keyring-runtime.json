@@ -1,0 +1,41 @@
+{
+  "version": "1.3.0",
+  "root": {
+    "name": "@napi-rs/keyring",
+    "integrity": "sha512-WrOw/bcXm0f9qHkumlT1QlArXSTWqaY9sunsDpOk+yCCorCKMxvWT/a3xko4EYHVdeZoh00yI2TydXn6eyICDA=="
+  },
+  "targets": {
+    "win32-x64": {
+      "name": "@napi-rs/keyring-win32-x64-msvc",
+      "integrity": "sha512-4DnCWXwDc0HRKwyRlG5y0VhKZW2tNRQfKKfyj6IX/KWfDNyq9hn4n+GL1auyDcOO/v8PwnhmYo2+rOOqCkvvOg=="
+    },
+    "win32-arm64": {
+      "name": "@napi-rs/keyring-win32-arm64-msvc",
+      "integrity": "sha512-tOd3c/uAaeoE4ycVlmAdSvygz0Zt3zdca6Y7gokBeIbaRDWpjDIUOpU3MvML59XAaqyuKGsVVu0F/DZb1lHPmw=="
+    },
+    "darwin-x64": {
+      "name": "@napi-rs/keyring-darwin-x64",
+      "integrity": "sha512-YcJtEV5LA3cvA4z3BurgxH5IhTsW1JfIvcAAcqcecwk06Si9F9NqkxbZVIfDwQ8oRHgaBmT3zZJnLAotCrVahw=="
+    },
+    "darwin-arm64": {
+      "name": "@napi-rs/keyring-darwin-arm64",
+      "integrity": "sha512-pl76hJvdYUBn6I24bXiOBMA9nbDapo3I5B+f3OorjDU4dUMSypXeKbOVehJe8fhgTiH24flMyTS3aAIy43xegQ=="
+    },
+    "linux-x64-gnu": {
+      "name": "@napi-rs/keyring-linux-x64-gnu",
+      "integrity": "sha512-2PDK1WKWTu9lBGq9VvNEkSlQD3O7YwVpmnyN2M3cy4v7NJ/8gDMd9GXv3G+FVXN13uhp4gnnPBS+ScefmEeD2A=="
+    },
+    "linux-x64-musl": {
+      "name": "@napi-rs/keyring-linux-x64-musl",
+      "integrity": "sha512-oJ2HkX8YUo46QBkn0pG+HuIKQNqr523q6vBobCn+P95s4C4K6/kLBqHY/1bg5J4ap31DzsznhnFKcfBNBsjCnw=="
+    },
+    "linux-arm64-gnu": {
+      "name": "@napi-rs/keyring-linux-arm64-gnu",
+      "integrity": "sha512-eyKGpY40lm9Jvs1aD294XRH4y7+TlJM0YVAryZeXA6TX0mb4gMkxVXwSQv7MCwgah7raeUd0dKUb4BPAYIgcMg=="
+    },
+    "linux-arm64-musl": {
+      "name": "@napi-rs/keyring-linux-arm64-musl",
+      "integrity": "sha512-iIK6JWHXAJqDrEyLY3TmswwloVyt2vj+04TZnew+uSJ9gnDO8EwRbp3/iw3LpWaXiDO7VomGO6y8I0Id8uBZSw=="
+    }
+  }
+}

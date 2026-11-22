@@ -1,0 +1,7 @@
+{
+  "profile_name": "Moje konto",
+  "email": "YOUR_SPEEDIANCE_EMAIL",
+  "region": "Global",
+  "device_type": 1,
+  "static_load_protocol": "legacy-reference-client-wire-lb-get-kg"
+}

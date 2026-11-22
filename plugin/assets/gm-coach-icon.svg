@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">GM Coach single dumbbell</title>
+  <desc id="description">One compact dumbbell with a short handle and one weight head at each end.</desc>
+  <defs>
+    <linearGradient id="weight" x1="112" y1="182" x2="402" y2="330" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#43E0C4"/>
+      <stop offset="1" stop-color="#62A5FF"/>
+    </linearGradient>
+    <linearGradient id="grip" x1="177" y1="240" x2="335" y2="272" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#C6DEFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#101B2D"/>
+  <rect x="8" y="8" width="496" height="496" rx="104" stroke="#A9C8E8" stroke-opacity=".14" stroke-width="16"/>
+  <g id="single-dumbbell" transform="rotate(-27 256 256)">
+    <rect class="dumbbell-handle" x="177" y="240" width="158" height="32" rx="16" fill="url(#grip)"/>
+    <path class="weight-head" d="M121 190H173L198 215V297L173 322H121L96 297V215L121 190Z" fill="url(#weight)"/>
+    <path class="weight-head" d="M339 190H391L416 215V297L391 322H339L314 297V215L339 190Z" fill="url(#weight)"/>
+    <path d="M226 248V264M238 248V264M250 248V264M262 248V264M274 248V264M286 248V264" stroke="#65809F" stroke-opacity=".52" stroke-width="4" stroke-linecap="round"/>
+    <path d="M121 202H164M352 202H391" stroke="#FFFFFF" stroke-opacity=".32" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>
