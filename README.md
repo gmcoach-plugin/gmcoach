@@ -5,7 +5,7 @@
 <h1 align="center">GM Coach</h1>
 
 <p align="center">
-  A local coaching plugin for Codex, ChatGPT and Claude that plans Gym Monster strength training from your own workout history and current research.
+  An AI coaching plugin for the Speediance Gym Monster (GM1 and GM2). It plans strength training in Codex, ChatGPT and Claude from your own workout history and current research.
 </p>
 
 <p align="center">
