@@ -70,6 +70,12 @@ GM Coach przechodzi przez kolejne kroki i pokazuje postęp podczas przygotowywan
   <img src="docs/gm-coach-plan-steps.png" alt="Kroki przygotowania planu w GM Coach: profil i audyt wywiadu, historia i kalendarz, ćwiczenia i dawki, ocena naukowa i podgląd, plan do akceptacji" width="330">
 </p>
 
+Gdy plan jest gotowy, GM Coach pokazuje cały trening, wyjaśnia swoje wybory i przed zapisem czeka na Twoją zgodę:
+
+<p align="center">
+  <img src="docs/gm-coach-plan-approval.png" alt="GM Coach pokazuje kompletny sobotni trening z trybem Eccentric, gotowy do zatwierdzenia" width="640">
+</p>
+
 ## Obsługiwane aplikacje
 
 | Aplikacja | System | Instrukcja instalacji |

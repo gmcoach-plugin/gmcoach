@@ -70,6 +70,12 @@ GM Coach works through clear steps and shows its progress while it prepares a pl
   <img src="docs/gm-coach-plan-steps.png" alt="GM Coach plan-building steps: profile and intake audit, history and calendar, exercises and doses, science review and preview, plan for approval" width="330">
 </p>
 
+When the plan is ready, GM Coach shows the full workout, explains its choices and waits for your approval before saving:
+
+<p align="center">
+  <img src="docs/gm-coach-plan-approval.png" alt="GM Coach showing a complete Saturday workout with Eccentric mode, ready for approval" width="640">
+</p>
+
 ## Supported apps
 
 | App | Platform | Installation guide |
