@@ -49,9 +49,11 @@
 ### More
 
 - **Official content:** browses official Speediance workouts and programs.
-- **Plan sharing:** exports a plan to a file that another account can import.
+- **Plan sharing and import:** exports a plan or a saved workout to a file, and imports shared plans and workout JSON files. Every imported exercise and dose is checked before anything is saved.
+- **Quick test workout:** creates a one-off test session to try an exercise or setting.
 - **Multiple accounts:** supports several Speediance profiles on one computer.
 - **Template limit:** detects a full template list and suggests unused templates to remove, only with your approval.
+- **Diagnostics:** checks the plugin version and the connection to your Speediance account.
 
 ### Safety and privacy
 

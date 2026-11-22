@@ -49,9 +49,11 @@
 ### Więcej
 
 - **Oficjalne treści:** przegląda oficjalne treningi i programy Speediance.
-- **Udostępnianie planu:** eksportuje plan do pliku, który można zaimportować na innym koncie.
+- **Udostępnianie i import planów:** eksportuje plan lub zapisany trening do pliku oraz importuje udostępnione plany i treningi z plików JSON. Przed zapisem sprawdza każde ćwiczenie i dawkę.
+- **Szybki trening testowy:** tworzy jednorazową sesję testową, żeby wypróbować ćwiczenie lub ustawienie.
 - **Kilka kont:** obsługuje kilka profili Speediance na jednym komputerze.
 - **Limit szablonów:** wykrywa pełną listę szablonów i proponuje usunięcie nieużywanych, wyłącznie za Twoją zgodą.
+- **Diagnostyka:** sprawdza wersję pluginu i połączenie z kontem Speediance.
 
 ### Bezpieczeństwo i prywatność
 
