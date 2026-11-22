@@ -1,50 +1,61 @@
-<p align="center"><img src="docs/logo.png" alt="GM Coach" width="180"></p>
+<p align="center">
+  <img src="docs/logo.png" alt="GM Coach logo" width="160">
+</p>
 
-# GM Coach
+<h1 align="center">GM Coach</h1>
 
-Darmowy plugin trenera dla **Codex**, **ChatGPT** i **Claude**. Pomaga planować trening siłowy na Gym Monster na podstawie historii Twoich treningów i aktualnych badań. Plugin działa lokalnie na Twoim komputerze i łączy się z Twoim kontem Speediance.
+<p align="center">
+  A local coaching plugin for Codex, ChatGPT and Claude that plans Gym Monster strength training from your own workout history and current research.
+</p>
 
-*A free coaching plugin for **Codex**, **ChatGPT** and **Claude** that plans Gym Monster strength training from your workout history and current research. It runs locally on your computer and connects to your own Speediance account.*
+<p align="center">
+  <a href="https://github.com/gmcoach-plugin/gmcoach/releases/latest"><img src="https://img.shields.io/github/v/release/gmcoach-plugin/gmcoach?label=release" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/gmcoach-plugin/gmcoach" alt="MIT license"></a>
+  <a href="https://ko-fi.com/gmcoach"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white" alt="Support on Ko-fi"></a>
+</p>
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-wesprzyj%20%2F%20support-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/gmcoach)
+## Features
 
-## Instalacja / Installation
+- **Workout history:** reads your completed Speediance sessions, including sets, loads and session details.
+- **Training plans:** creates and edits Gym Monster programs for strength, timed exercises and cardio, using only exercises and accessories you confirm.
+- **Evidence-based coaching:** checks plan decisions against current research before suggesting them.
+- **Safe writes:** shows a full preview of every plan and saves it to your account only after your explicit confirmation.
+- **Local and private:** runs on your computer, and your Speediance password stays in the system password store.
 
-Pobierz paczkę z zakładki **[Releases](../../releases)**, sprawdź sumę SHA-256, rozpakuj ją i postępuj według instrukcji:
+## Supported apps
 
-*Download a package from **[Releases](../../releases)**, verify its SHA-256 checksum, extract it and follow the guide:*
-
-| Aplikacja / App | Paczka / Package | Instrukcja / Guide |
+| App | Platform | Installation guide |
 |---|---|---|
-| Codex (+ opcjonalnie ChatGPT / optionally ChatGPT) | `GM-Coach-<wersja>_codex.<data>-installer.zip` | [PL](installer/codex/README-INSTALACJA.md) · [EN](installer/codex/README-INSTALL-EN.md) |
-| Claude | `GM-Coach-<wersja>-claude-installer.zip` | [PL](installer/claude/README-CLAUDE.md) · [EN](installer/claude/README-CLAUDE-EN.md) |
+| Codex (optionally ChatGPT through a secure tunnel) | Windows; macOS and Linux experimental | [English](installer/codex/README-INSTALL-EN.md) · [Polski](installer/codex/README-INSTALACJA.md) |
+| Claude (desktop app and Claude Code) | Windows; macOS and Linux experimental | [English](installer/claude/README-CLAUDE-EN.md) · [Polski](installer/claude/README-CLAUDE.md) |
 
-Windows jest przetestowany. Instalatory macOS i Linux są eksperymentalne.
+## Quick start
 
-*Windows is tested. The macOS and Linux installers are experimental.*
+1. Download the installer for your app from the [latest release](https://github.com/gmcoach-plugin/gmcoach/releases/latest).
+2. Verify the file against its `.sha256` checksum.
+3. Extract the whole archive and run `START-WINDOWS.cmd` (Codex) or `START-CLAUDE-WINDOWS.cmd` (Claude).
+4. Open a new chat and write: *"GM Coach, help me connect my Speediance account."*
 
-## Prywatność / Privacy
+You need a Speediance account and a Gym Monster. See the installation guide for macOS, Linux, updates and uninstalling.
 
-Hasło Speediance zostaje w systemowym magazynie haseł na Twoim komputerze. Plugin zapisuje plany na koncie dopiero po Twoim wyraźnym potwierdzeniu.
+## Privacy and security
 
-*Your Speediance password stays in your system password store. The plugin saves plans to your account only after your explicit confirmation.*
+- Your Speediance password is stored only in your operating system's credential store (Windows Credential Manager, macOS Keychain or Linux Secret Service). Never share it in a chat.
+- The plugin reads your history and changes your account only after you allow it in the conversation.
+- The installers download dependencies from official sources and verify their checksums.
 
-## Wsparcie / Support
+## Reporting bugs and requesting features
 
-Znalazłeś błąd albo masz pomysł? [Zgłoś go w Issues](../../issues/new/choose). Podaj wersję z diagnostyki i nie wklejaj hasła ani e-maila.
+Use [GitHub Issues](https://github.com/gmcoach-plugin/gmcoach/issues/new/choose). Include the plugin version from the local diagnostics, and do not post passwords, e-mail addresses, tokens or keys.
 
-*Found a bug or have an idea? [Report it in Issues](../../issues/new/choose). Include the version from the diagnostics and never paste passwords or e-mail addresses.*
+## Support the project
 
-Jeśli GM Coach Ci pomaga, możesz [postawić mi kawę na Ko-fi](https://ko-fi.com/gmcoach) ☕
+GM Coach is free. If it helps your training, you can [support it on Ko-fi](https://ko-fi.com/gmcoach).
 
-*If GM Coach helps you, you can [buy me a coffee on Ko-fi](https://ko-fi.com/gmcoach) ☕*
+## License
 
-## Licencja / License
+Released under the [MIT License](LICENSE).
 
-[MIT](LICENSE)
+## Disclaimer
 
----
-
-GM Coach to niezależny projekt, niezwiązany ze Speediance. Gym Monster i Speediance są znakami towarowymi ich właścicieli.
-
-*GM Coach is an independent project, not affiliated with Speediance. Gym Monster and Speediance are trademarks of their respective owners.*
+GM Coach is an independent project and is not affiliated with, endorsed by or sponsored by Speediance. Gym Monster and Speediance are trademarks of their respective owners. The training suggestions do not replace advice from a qualified coach or medical professional.
