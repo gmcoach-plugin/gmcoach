@@ -58,6 +58,8 @@
 ### Safety and privacy
 
 - **Safe writes:** shows a full preview of every plan and saves it to your account only after your explicit confirmation.
+- **Interrupted saves:** if a save is interrupted, GM Coach checks your account before trying again, so a workout is never saved twice. A multi-week cycle continues from where it stopped.
+- **Local memory:** remembers facts you ask it to keep, such as equipment or preferences, and forgets them when you ask.
 - **Local and private:** runs on your computer, and your Speediance password stays in the system password store.
 
 ### How a new plan is built

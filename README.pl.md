@@ -58,6 +58,8 @@
 ### Bezpieczeństwo i prywatność
 
 - **Bezpieczny zapis:** pokazuje pełny podgląd planu i zapisuje go na koncie dopiero po Twoim wyraźnym potwierdzeniu.
+- **Przerwany zapis:** jeśli zapis zostanie przerwany, GM Coach przed ponowną próbą sprawdza konto, więc trening nigdy nie zapisze się dwa razy. Cykl wielotygodniowy jest kontynuowany od miejsca przerwania.
+- **Pamięć lokalna:** zapamiętuje fakty, które każesz mu zachować, na przykład sprzęt albo preferencje, i usuwa je na Twoją prośbę.
 - **Lokalnie i prywatnie:** działa na Twoim komputerze, a hasło Speediance zostaje w systemowym magazynie haseł.
 
 ### Jak powstaje nowy plan
