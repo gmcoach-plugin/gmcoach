@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="https://github.com/gmcoach-plugin/gmcoach/releases/latest"><img src="https://img.shields.io/github/v/release/gmcoach-plugin/gmcoach?label=wydanie" alt="Najnowsze wydanie"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/gmcoach-plugin/gmcoach?label=licencja" alt="Licencja MIT"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licencja-PolyForm%20Noncommercial-blue" alt="Licencja PolyForm Noncommercial"></a>
   <a href="https://ko-fi.com/gmcoach"><img src="https://img.shields.io/badge/Ko--fi-wesprzyj-FF5E5B?logo=kofi&logoColor=white" alt="Wesprzyj na Ko-fi"></a>
 </p>
 
@@ -169,7 +169,7 @@ GM Coach jest darmowy. Jeśli pomaga Ci w treningu, możesz [wesprzeć go na Ko-
 
 ## Licencja
 
-Projekt jest udostępniony na [licencji MIT](LICENSE).
+Darmowy do użytku osobistego, hobbystycznego, edukacyjnego i badawczego na licencji [PolyForm Noncommercial 1.0.0](LICENSE). Użycie komercyjne wymaga zgody autora — napisz w issue. Fragmenty pochodzące z projektów innych autorów na licencji MIT pozostają na ich oryginalnych licencjach (zobacz [plugin/THIRD_PARTY_NOTICES.md](plugin/THIRD_PARTY_NOTICES.md)). Wersje wydane przed tą zmianą pozostają dostępne na licencji MIT.
 
 ## Zastrzeżenia
 

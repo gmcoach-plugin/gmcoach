@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="https://github.com/gmcoach-plugin/gmcoach/releases/latest"><img src="https://img.shields.io/github/v/release/gmcoach-plugin/gmcoach?label=release" alt="Latest release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/gmcoach-plugin/gmcoach" alt="MIT license"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue" alt="PolyForm Noncommercial license"></a>
   <a href="https://ko-fi.com/gmcoach"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white" alt="Support on Ko-fi"></a>
 </p>
 
@@ -169,7 +169,7 @@ GM Coach is free. If it helps your training, you can [support it on Ko-fi](https
 
 ## License
 
-Released under the [MIT License](LICENSE).
+Free for personal, hobby, educational and research use under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use requires the author's permission — open an issue to ask. Portions derived from third-party MIT-licensed projects remain under their original licenses (see [plugin/THIRD_PARTY_NOTICES.md](plugin/THIRD_PARTY_NOTICES.md)). Versions released before this change remain available under MIT.
 
 ## Disclaimer
 
