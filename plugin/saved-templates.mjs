@@ -309,7 +309,7 @@ function recordedRmPresentation(action, presetId, setIndex, setCount, workUnit) 
       const hasKg=kg2!==null&&Number.isFinite(kg2)&&kg2>0&&Math.abs(kg2-3.5)>1e-9;
       return {loadType:'percent-1rm-kg',loadUnit:hasKg?'kg':'device-managed',...(hasKg?{loadKg:kg2}:{}),percent1RM:pct,recordedPresetId:presetId,percentSource:'percent1rmStr',
         loadDiagnostics:['percent-1rm-from-percent1rmStr'],
-        displayLoad:`${presetName} · ${pct}% 1RM${hasKg?` ≈ ${kg2} kg`:' · kg dobierze Speediance'}`};
+        displayLoad:`${presetName} · ${pct}% 1RM${hasKg?` · ${kg2} kg`:' · kg dobierze Speediance'}`};
     }
   }
   if(workUnit==='reps'&&names.length===0&&['counterweight','percent1rmStr'].every(k=>action[k]===undefined||action[k]===null||action[k]==='')){
@@ -360,7 +360,7 @@ function resolveSavedTemplateLoadPresentationWithParser(parseNumericValues, acti
     if (pct !== null && Number.isFinite(pct) && pct >= 1 && pct <= 100) {
       const hasKg = weight !== null && Number.isFinite(weight) && weight > 0 && Math.abs(weight - 3.5) > 1e-9;
       const presetName = getReferenceClientRmPresetById(presetId)?.name ?? ('Preset ' + presetId);
-      return { loadType: 'percent-1rm-kg', loadUnit: hasKg ? 'kg' : 'device-managed', ...(hasKg ? { loadKg: weight } : {}), percent1RM: pct, recordedPresetId: presetId, percentSource: 'percent1rmStr', technicalRmLevel2: rmLevel2, loadDiagnostics: ['percent-1rm-from-percent1rmStr'], displayLoad: presetName + ' · ' + pct + '% 1RM' + (hasKg ? ' ≈ ' + weight + ' kg' : ' · kg dobierze Speediance') };
+      return { loadType: 'percent-1rm-kg', loadUnit: hasKg ? 'kg' : 'device-managed', ...(hasKg ? { loadKg: weight } : {}), percent1RM: pct, recordedPresetId: presetId, percentSource: 'percent1rmStr', technicalRmLevel2: rmLevel2, loadDiagnostics: ['percent-1rm-from-percent1rmStr'], displayLoad: presetName + ' · ' + pct + '% 1RM' + (hasKg ? ' · ' + weight + ' kg' : ' · kg dobierze Speediance') };
     }
   }
   if (isObservedRmPresetAction(action)) {

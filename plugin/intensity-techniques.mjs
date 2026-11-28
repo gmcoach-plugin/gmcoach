@@ -2,7 +2,7 @@
 // Speediance/GM nie ma pola „superseria”: zapis to naprzemienne pojedyncze serie
 // z przerwą przejścia 0 s (maszyna zapisuje minimum 1 s) i przerwą po rundzie
 // (zob. superset-serialization.mjs). Drop set to dodatkowa seria tego samego
-// ćwiczenia z niższym obciążeniem i przerwą 0 s (zapis 1 s).
+// ćwiczenia (set.dropSet=true) z niższym obciążeniem i przerwą 0 s (zapis 1 s).
 const ANTAGONISTS = [['chest', 'back'], ['biceps', 'triceps'], ['quadriceps', 'hamstrings'], ['shoulders', 'lats'], ['abs', 'lower back'], ['glutes', 'abs']];
 import { classifyJoint, equipmentOf } from './equipment-order.mjs';
 
@@ -54,7 +54,7 @@ export function suggestIntensityTechniques(exercises, { goal = 'hypertrophy', ti
   const priorityPick = isolations.find((e) => priorities.some((p) => norm(e.muscleGroup).includes(p) || p.includes(norm(e.muscleGroup))));
   const pick = priorityPick ?? isolations[isolations.length - 1];
   const dropSets = hypertrophy && !userDeclinedDropSets && pick
-    ? [{ entryId: pick.entryId, placement: 'last-set', restBeforeDropSeconds: 0, serializedAs: 'dodatkowa seria tego samego ćwiczenia z niższym obciążeniem, przerwa 0 s (zapis 1 s)', reason: priorityPick ? 'Dodatkowa objętość blisko upadku dla partii priorytetowej, bez wydłużania sesji.' : 'Ostatnia izolacja sesji: dodatkowy bodziec bez ryzyka dla kolejnych ćwiczeń.' }]
+    ? [{ entryId: pick.entryId, placement: 'last-set', restBeforeDropSeconds: 0, serializedAs: '1–2 kolejne serie tego samego ćwiczenia (dropSet=true) z niższym obciążeniem: Smart RM niższy percent1RM w zakresie presetu (np. 70→60→50), Customize ok. 20–30% mniej kg; restSeconds 0 (zapis 1 s), powtórzenia do bliskiego RIR', extraSets: 2, rest: 0, customizeReduction: [0.2, 0.3], reason: priorityPick ? 'Dodatkowa objętość blisko upadku dla partii priorytetowej, bez wydłużania sesji.' : 'Ostatnia izolacja sesji: dodatkowy bodziec bez ryzyka dla kolejnych ćwiczeń.' }]
     : [];
   return { supersets, dropSets, order: orderBySetup(main).map((e) => e.entryId), note: 'Propozycje: dodaj tylko te, które realnie pomagają celowi lub czasowi, każdą z jednym zdaniem uzasadnienia; brak sensownego miejsca oznacza brak dodatków.' };
 }

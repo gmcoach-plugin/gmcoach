@@ -80,6 +80,11 @@ When the plan is ready, GM Coach shows the full workout, explains its choices an
   <img src="docs/gm-coach-plan-approval.png" alt="GM Coach showing a complete Saturday workout with Eccentric mode, ready for approval" width="640">
 </p>
 
+## What's new in 1.0.693
+
+- **Drop sets are now saved in the plan:** a drop set is written as consecutive sets of the same exercise with a lower %1RM or kg and the shortest rest (for example 70% → 65% → 55%), and is labelled "Drop set" in the preview.
+- **Rules:** drop sets are used only for hypertrophy, at most one per workout, and you can turn them off.
+- **Saved plans:** reading a saved plan now shows the % and the kg for every set.
 ## What's new in 1.0.692
 
 - **One-command install** in Codex and Claude (see [Install with one command](#install-with-one-command)).

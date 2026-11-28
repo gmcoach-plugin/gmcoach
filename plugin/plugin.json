@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "gm-coach",
-  "version": "1.0.692+codex.20261122",
+  "version": "1.0.693+codex.20261128",
   "description": "GM Coach ma własne narzędzia MCP do połączenia z kontem Speediance, odczytu historii treningów oraz planowania treningu siłowego na Gym Monster.",
   "author": {
     "name": "GM Coach contributors"

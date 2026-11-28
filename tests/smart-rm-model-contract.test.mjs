@@ -33,7 +33,7 @@ test('equipment reference uses Monster family presets and native history without
   assert.match(reference, /\/app\/trainingInfo\//);
   assert.match(reference, /wraz z poprawnymi statycznymi weights i pustymi counterweight oznacza Customize/);
   assert.match(reference, /nie uznawaj samego -1 za brak ciężaru/);
-  assert.match(reference, /Dropset, rest-pause i pauzy\/tempo[^\n]*przybliżenie z wierszy serii[^\n]*pozostają not_used/);
+  assert.match(reference, /Drop set GM Coach zapisuje jako kolejne serie[^\n]*Rest-pause i pauzy\/tempo[^\n]*przybliżenie z wierszy serii[^\n]*pozostają not_used/);
 });
 
 test('preset skill keeps named global Smart RM separate from variant catalog evidence', () => {

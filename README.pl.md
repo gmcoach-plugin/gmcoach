@@ -80,6 +80,11 @@ Gdy plan jest gotowy, GM Coach pokazuje cały trening, wyjaśnia swoje wybory i 
   <img src="docs/gm-coach-plan-approval.png" alt="GM Coach pokazuje kompletny sobotni trening z trybem Eccentric, gotowy do zatwierdzenia" width="640">
 </p>
 
+## Nowości w 1.0.693
+
+- **Dropsety są teraz zapisywane w planie:** dropset to kolejne serie tego samego ćwiczenia z niższym %1RM lub kg i minimalną przerwą (np. 70% → 65% → 55%), oznaczone w podglądzie „Drop set”.
+- **Zasady:** dropsety tylko przy hipertrofii, maksymalnie jeden na trening, można je wyłączyć.
+- **Zapisane plany:** odczyt zapisanego planu pokazuje % i kg przy każdej serii.
 ## Nowości w 1.0.692
 
 - **Instalacja jednym poleceniem** w Codex i Claude (zobacz [Instalacja jednym poleceniem](#instalacja-jednym-poleceniem)).

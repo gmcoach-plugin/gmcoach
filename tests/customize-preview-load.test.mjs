@@ -6,6 +6,8 @@ const syntheticRecoveryContext = { status: 'not_requested', limitations: ['Synth
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import { suggestIntensityTechniques } from '../plugin/intensity-techniques.mjs';
+import { buildSessionTable } from '../plugin/session-table.mjs';
 import { readInstructionAwareSync as readFileSync } from './fixtures/skill-instructions.mjs';
 import * as payloadFunctions from '../plugin/program-payload.mjs';
 import * as referenceClientFunctions from '../plugin/athlete-context.mjs';
@@ -464,3 +466,68 @@ test('actual normalizer rejects any supplied weightKg on Smart RM and anchor-bas
   Object.assign(manual.exercises[0].sets[0], { weight: 8, weightUnit: 'kg' });
   assert.equal(normalize(manual).exercises[0].sets[0].weight, 8);
 });
+
+function smartPlan(sets, extra = {}) {
+  const input = plan('kg', 100, [10]);
+  input.intakeAnswers = { primaryGoal: 'hipertrofia' };
+  Object.assign(input.exercises[0], { loadType: 'smart-rm', ...extra });
+  delete input.exercises[0].userRequestedReferenceClientCustomize;
+  delete input.exercises[0].strengthAnchor;
+  input.exercises[0].sets = sets;
+  return input;
+}
+const rmSet = (extra = {}) => ({ unit: 'reps', reps: 10, rirTarget: 2, mode: 1, restSeconds: 60, ...extra });
+
+test('Smart RM always gets an automatic percent; kg stay with Speediance without 1RM', () => {
+  const set = normalize(smartPlan([rmSet(), rmSet({ reps: 8, rirTarget: 1 })])).exercises[0].sets;
+  assert.equal(set[0].percentResolved.percent1RM, 70);
+  assert.equal(set[0].rmLevel, 12);
+  assert.equal(set[0].percentResolved.loadKg, null);
+  assert.equal(set[1].percentResolved.percent1RM, 77);
+});
+test('known 1RM adds estimated kg; manual percent wins but a differing percent needs a reason', () => {
+  const oneRepMax = { value: 43.5, unit: 'kg', source: 'user-confirmed-one-rep-max' };
+  const ok = normalize(smartPlan([rmSet({ percent1RM: 50, percentReason: 'seria wprowadzająca' }), rmSet(), rmSet({ percent1RM: 80, percentReason: 'top set' })], { percentLoad: { oneRepMax } })).exercises[0].sets;
+  assert.deepEqual(ok.map((item) => [item.percentResolved.percent1RM, item.percentResolved.loadKg]), [[50, 22], [70, 30], [80, 35]]);
+  assert.throws(() => normalize(smartPlan([rmSet({ percent1RM: 50 })])), /percentReason/);
+  assert.equal(normalize(smartPlan([rmSet({ percent1RM: 70 })])).exercises[0].sets[0].percentResolved.method, 'manual-override');
+});
+
+
+const dropRm = (extra = {}) => rmSet({ restSeconds: 0, dropSet: true, ...extra });
+test('Smart RM drop set 70 > 65 > 55 passes preview normalization and serializes counterweight2/percent1rmStr per set', () => {
+  const sets = normalize(smartPlan([rmSet({ restSeconds: 0 }), dropRm({ percent1RM: 65 }), dropRm({ percent1RM: 55, restSeconds: 60 })])).exercises[0].sets;
+  assert.deepEqual(sets.map((s) => s.percentResolved.percent1RM), [70, 65, 55]);
+  assert.deepEqual(sets.map((s) => s.dropSet === true), [false, true, true]);
+  assert.deepEqual(sets.map((s) => s.rest), [0, 0, 60]);
+  assert.match(sets[1].percentResolved.rationale, /drop set/);
+  const wire = payloadFunctions.buildExerciseLoadPayload('smart-rm', sets, { smartRmPresetName: 'Gain Muscle' });
+  assert.equal(wire.counterweight, ''); assert.equal(wire.counterweight2, '12,14,18'); assert.equal(wire.percent1rmStr, '70,65,55');
+});
+test('Customize drop set with decreasing kg passes; heavier, first-set or long-rest drop sets are rejected', () => {
+  const custom = (sets) => { const input = plan('kg', 100, [10]); delete input.exercises[0].userRequestedReferenceClientCustomize; delete input.exercises[0].strengthAnchor; Object.assign(input.exercises[0], { loadType: 'customize-manual', staticLoadRequested: true }); input.exercises[0].sets = sets; return input; };
+  const row = (weight, extra = {}) => ({ unit: 'reps', reps: 10, rirTarget: 1, mode: 1, restSeconds: 60, weight, weightUnit: 'kg', ...extra });
+  const ok = normalize(custom([row(40, { restSeconds: 0 }), row(30, { dropSet: true, restSeconds: 0 }), row(24, { dropSet: true, restSeconds: 60 })])).exercises[0].sets;
+  assert.deepEqual(ok.map((s) => s.weight), [40, 30, 24]); assert.deepEqual(ok.map((s) => s.dropSet === true), [false, true, true]);
+  assert.throws(() => normalize(custom([row(40, { restSeconds: 0 }), row(45, { dropSet: true, restSeconds: 0 })])), /niższe niż poprzedniej/);
+  assert.throws(() => normalize(custom([row(40, { dropSet: true, restSeconds: 0 })])), /bezpośrednio po serii roboczej/);
+  assert.throws(() => normalize(custom([row(40), row(30, { dropSet: true, restSeconds: 0 })])), /przerwa przed serią drop setu/);
+  assert.throws(() => normalize(custom([row(40, { restSeconds: 0 }), row(32, { dropSet: true, restSeconds: 60 }), row(26, { dropSet: true, restSeconds: 0 })])), /przerwa przed serią drop setu/);
+  assert.throws(() => normalize(custom([row(40, { restSeconds: 0 }), row(32, { dropSet: true, restSeconds: 0 }), row(26, { dropSet: true, restSeconds: 0 }), row(20, { dropSet: true, restSeconds: 0 })])), /1–2 dodatkowe/);
+});
+test('Smart RM drop set must lower the percent', () => {
+  assert.throws(() => normalize(smartPlan([rmSet({ restSeconds: 0 }), dropRm({ percent1RM: 80 })])), /niższe niż poprzedniej/);
+});
+test('suggestions add no drop set when the goal does not justify it; hypertrophy isolation gets one with a reason', () => {
+  const ex = [{ entryId: 1, section: 'main', muscleGroup: 'chest', equipment: 'a', isolation: false, anchor: true }, { entryId: 2, section: 'main', muscleGroup: 'biceps', equipment: 'b', isolation: true }];
+  assert.deepEqual(suggestIntensityTechniques(ex, { goal: 'strength' }).dropSets, []);
+  const hyp = suggestIntensityTechniques(ex, { goal: 'hypertrophy' }).dropSets;
+  assert.equal(hyp.length, 1); assert.match(hyp[0].serializedAs, /dropSet=true/); assert.ok(hyp[0].reason);
+});
+test('drop set rows are never grouped and are labelled in the session table', () => {
+  const rows = normalize(smartPlan([rmSet({ restSeconds: 0 }), dropRm({ percent1RM: 65 }), dropRm({ percent1RM: 55 })])).exercises;
+  const table = buildSessionTable({ exercises: rows.map((e) => ({ ...e, title: 'Press' })) });
+  const parts = table.main[0].sets.split('; ');
+  assert.equal(parts.length, 3); assert.doesNotMatch(parts[0], /Drop set/); assert.match(parts[1], /\[Drop set\]/); assert.match(parts[2], /\[Drop set\]/);
+});
+

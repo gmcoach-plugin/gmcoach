@@ -700,7 +700,7 @@ export function assertNoUnserializedTechniqueInstructions({
     ])
   ];
   for (const [field, value] of executionFields) {
-    const mention = findUnserializedTechniqueMention(value, { supersetsSerialized: supersetBlocks.length > 0 });
+    const mention = findUnserializedTechniqueMention(value, { supersetsSerialized: supersetBlocks.length > 0, dropSetsSerialized: exercises.some((exercise) => Array.isArray(exercise?.sets) && exercise.sets.some((set) => set?.dropSet === true)) });
     if (mention) throw unserializedTechniqueError(field, mention.label);
   }
 
@@ -716,16 +716,17 @@ export function assertNoUnserializedTechniqueInstructions({
     ])
   ];
   for (const [field, value] of explanatoryFields) {
-    const mention = findUnserializedTechniqueInstruction(value, { supersetsSerialized: supersetBlocks.length > 0 });
+    const mention = findUnserializedTechniqueInstruction(value, { supersetsSerialized: supersetBlocks.length > 0, dropSetsSerialized: exercises.some((exercise) => Array.isArray(exercise?.sets) && exercise.sets.some((set) => set?.dropSet === true)) });
     if (mention) throw unserializedTechniqueError(field, mention.label);
   }
 }
 
-function findUnserializedTechniqueInstruction(value, { supersetsSerialized = false } = {}) {
+function findUnserializedTechniqueInstruction(value, { supersetsSerialized = false, dropSetsSerialized = false } = {}) {
   if (typeof value !== 'string' || !value.trim()) return null;
   for (const sentence of value.split(/(?<=[.!?;\n])\s+/u)) {
     for (const { label, pattern } of UNSERIALIZED_TECHNIQUE_TERMS) {
       if (supersetsSerialized && label === 'superseria/superset') continue;
+    if (dropSetsSerialized && label === 'drop-set') continue;
       const matches = [...sentence.matchAll(new RegExp(pattern.source, pattern.flags))];
       if (!matches.length) continue;
       if (hasAffirmativePlanUsage(sentence, matches)) return { label };
@@ -783,10 +784,11 @@ function hasNearbyNegation(sentence, cueStart, cueEnd) {
     CLAUSE_NEGATION.test(before.slice(Math.max(0, before.lastIndexOf(','), before.lastIndexOf(';'), before.lastIndexOf(':'))));
 }
 
-function findUnserializedTechniqueMention(value, { supersetsSerialized = false } = {}) {
+function findUnserializedTechniqueMention(value, { supersetsSerialized = false, dropSetsSerialized = false } = {}) {
   if (typeof value !== 'string' || !value.trim()) return null;
   for (const { label, pattern } of UNSERIALIZED_TECHNIQUE_TERMS) {
     if (supersetsSerialized && label === 'superseria/superset') continue;
+    if (dropSetsSerialized && label === 'drop-set') continue;
     if (new RegExp(pattern.source, pattern.flags).test(value)) return { label };
   }
   return null;

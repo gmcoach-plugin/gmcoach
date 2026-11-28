@@ -13,7 +13,7 @@ const sectionKeys=['status','instructions','omissionReason'];
 const sectionItemKeys=['kind','activity','target','method','instructions','dosage','targetExerciseIds','executionRef'];
 function sections(plan){const out={};for(const key of ['warmup','postWorkoutStretching']){const declared=pick(plan,[key])[key];if(declared!==undefined){out[key]=pick(declared,sectionKeys);const items=pick(declared,['items']).items;if(items!==undefined)out[key].items=items.map(item=>pick(item,sectionItemKeys));}}return out;}
 const exerciseKeys=['trainingGoal','entryId','id','actionLibraryId','title','section','loadType','smartRmPresetName','unilateralPrescription','sideTransitionSeconds','sideTransitionRationale'];
-const setKeys=['side','unit','reps','durationSeconds','rirTarget','intensity','weight','weightUnit','weightKg','mode','restSeconds','rest','percent1RM','percentReason'];
+const setKeys=['side','unit','reps','durationSeconds','rirTarget','intensity','weight','weightUnit','weightKg','mode','restSeconds','rest','percent1RM','percentReason','dropSet'];
 
 // Called only by server-owned preparation with its actual public input and
 // normalized, unexpanded prescription. Never accepts historical API rows.
