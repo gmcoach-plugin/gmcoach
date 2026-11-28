@@ -150,7 +150,7 @@ function normalizeEditableCandidate(input) {
   if (candidate.exercises !== undefined) {
     if (!Array.isArray(candidate.exercises) || candidate.exercises.length < 1 || candidate.exercises.length > 30) throw new Error('Candidate exercises must contain 1–30 rows.');
     const exerciseKeys = ['entryId', 'id', 'actionLibraryId', 'title', 'section', 'loadType', 'trainingGoal', 'smartRmPresetName', 'unilateralPrescription', 'sideTransitionSeconds', 'sideTransitionRationale', 'sets'];
-    const setKeys = ['side', 'unit', 'reps', 'durationSeconds', 'rirTarget', 'weight', 'weightUnit', 'weightKg', 'mode', 'restSeconds'];
+    const setKeys = ['side', 'unit', 'reps', 'durationSeconds', 'rirTarget', 'weight', 'weightUnit', 'weightKg', 'mode', 'restSeconds', 'percent1RM', 'percentReason'];
     for (const exercise of candidate.exercises) {
       assertDataRecord(exercise, exerciseKeys, ['id', 'title', 'sets']);
       if (!Array.isArray(exercise.sets) || !exercise.sets.length || exercise.sets.length > 12) throw new Error('Candidate exercise sets must contain 1–12 rows.');
@@ -332,7 +332,7 @@ export function compareSharedPlanChanges(sourceArchive, candidate) {
     for (let index = 0; index < setCount; index++) {
       const left = old.sets[index], right = ex.sets[index];
       if (!left || !right) { changes.push({ path: `exercises.${id}.sets.${index}`, kind: left ? 'removed' : 'added' }); continue; }
-      for (const field of ['unit', 'reps', 'durationSeconds', 'side', 'mode', 'restSeconds', 'rirTarget', 'weight', 'weightUnit', 'weightKg']) {
+      for (const field of ['unit', 'reps', 'durationSeconds', 'side', 'mode', 'restSeconds', 'rirTarget', 'weight', 'weightUnit', 'weightKg', 'percent1RM', 'percentReason']) {
         const rightValue = field === 'unit' && right[field] === 'sec' ? 'seconds' : right[field];
         if (JSON.stringify(rightValue ?? null) !== JSON.stringify(left[field] ?? null)) changes.push({ path: `exercises.${id}.sets.${index}.${field}`, before: left[field] ?? null, after: rightValue ?? null });
       }

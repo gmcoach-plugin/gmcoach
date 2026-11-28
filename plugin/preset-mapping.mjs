@@ -110,14 +110,16 @@ export function expandObservedRmPresetAction(action) {
   // counterweight2 carries the RM level and weights carries the device-computed display load (e.g. 52 for RM 13).
   // Only in that shape the write form is restored: counterweight = counterweight2 and weights = the 3.5 placeholder.
   const percentCells = expand(numericCsv(action?.percent1rmStr));
-  const readbackShape = action?.counterweight === undefined && counterweight2 !== null && percentCells !== null && percentCells.every(value => value > 0 && value <= 100);
+  // percent shape: counterweight absent or empty (the writer sends '' like the app omits it), RM level in counterweight2 from the percent table, percent1rmStr per set.
+  const counterweightAbsent = action?.counterweight === undefined || action?.counterweight === null || action?.counterweight === '';
+  const readbackShape = counterweightAbsent && counterweight2 !== null && percentCells !== null && percentCells.every(value => value > 0 && value <= 100);
   const counterweight = readbackShape ? counterweight2 : expand(numericCsv(action?.counterweight));
   if (readbackShape && weights && weights.every(value => value > 0)) weights = weights.map(() => 3.5);
   if (!reps.length || !weights || !counterweight || !counterweight2) return null;
   const minReps = rules?.minReps ?? 1;
   const maxReps = rules?.maxReps ?? MAX_PRESET_REPS;
   if (reps.some((value) => !Number.isSafeInteger(value) || value < minReps || value > maxReps)) return null;
-  if (rules && counterweight.some((value) => value < rules.minRmLevel || value > rules.maxRmLevel)) return null;
+  if (rules && !readbackShape && counterweight.some((value) => value < rules.minRmLevel || value > rules.maxRmLevel)) return null;
   if (weights.some((value) => Math.abs(value - 3.5) > 1e-9)) return null;
   if (counterweight.some((value, index) =>
     !Number.isSafeInteger(value) || value < 1 || value > 20 || value !== counterweight2[index]

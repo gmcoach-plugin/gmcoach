@@ -1323,7 +1323,7 @@ function baseSetDecisionValue(exercise, set, category) {
           throw new Error(`Ćwiczenie ${exercise.id}: liczba reps nie mieści się w zakresie wybranego presetu.`);
         }
         let rmLevel;
-        try { rmLevel = validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: exercise.smartRmPresetName }).rmLevel; }
+        try { rmLevel = validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: exercise.smartRmPresetName }, { allowPercentLevel: Boolean(set.percentResolved) }).rmLevel; }
         catch (error) { throw new Error(`Ćwiczenie ${exercise.id}: ${error.message}`); }
         const presetName = typeof exercise.smartRmPresetName === 'string' ? `;presetName=${exercise.smartRmPresetName}` : '';
         return `loadType=reference-client-rm-preset;unit=reps;reps=${set.reps};rirTarget=${set.rirTarget};presetId=${exercise.smartRmPresetId}${presetName};${set.rmLevelValidation?.method === 'reference-client-reviewed-imported-rm-level' ? `rmCounterSource=reviewed-import-migration;importedSelector=${rmLevel}` : 'rmCounterSource=public-reference-client-preset-default'};loadSource=reference-client-machine-preset`;

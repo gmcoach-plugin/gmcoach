@@ -60,3 +60,7 @@ bash install-claude-linux.sh --language pl   # Linux
 W rozpakowanym folderze uruchom: `powershell -NoProfile -ExecutionPolicy Bypass -File .\install-claude-windows.ps1 -Uninstall`
 
 Rozszerzenie `.mcpb`, jeśli było instalowane, usuń w **Settings → Extensions**. Dane konta zostają na komputerze, bo korzysta z nich także Codex.
+
+## Aktualizacja bez ponownej instalacji
+
+Masz już wtyczkę w Claude Code? Pobierz małą paczkę `GM-Coach-<wersja>-claude-updater.zip` i uruchom `UPDATE-CLAUDE-WINDOWS.cmd` (macOS/Linux: `bash update-claude-macos-linux.sh`). Nic nie jest pobierane, dane i hasło zostają, jest kopia zapasowa i rollback. Szczegóły: README-CLAUDE-AKTUALIZACJA.md w paczce.

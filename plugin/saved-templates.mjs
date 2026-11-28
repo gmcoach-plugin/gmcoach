@@ -1,6 +1,7 @@
 import { quantizeCustomizeLoad } from './customize-load-step.mjs';
 import { createHash } from 'node:crypto';
 import { formatWireDecimal } from './static-load-wire-units.mjs';
+import { resolvePercent1RMSet } from './percent-1rm.mjs';
 import { buildExerciseLoadPayload, validateReferenceClientRmLevel, getReferenceClientRmPresetRules, mapReferenceClientResistanceModesToWire, MAX_PRESET_REPS } from './program-payload.mjs';
 import { validateStaticLoad } from './static-load-limits.mjs';
 import { encodeStaticLoad, staticLoadBeforeWireRounding, decodeStaticLoad, STATIC_LOAD_PROTOCOLS } from './static-load-protocol.mjs';
@@ -295,6 +296,32 @@ function recordedRmPresentation(action, presetId, setIndex, setCount, workUnit) 
     loadDiagnostics:['preset-name-conflict'],displayLoad:'sprzeczne oznaczenia presetu; obciążenie niepotwierdzone'
   };
   const diagnostics=['saved-load-representation-unqualified'];
+  // Observed app shape for an exercise set to %1RM: templatePresetId stays a preset id, counterweight is absent,
+  // counterweight2 is present, percent1rmStr is absent and weights holds the app-computed kg (not the 3.5 marker).
+  // The percent itself is not stored and the 1RM is unknown, so neither is invented.
+  // Current app/API shape: percent1rmStr carries the percent for every set (counterweight absent, counterweight2 = RM level, weights = kg computed by Speediance).
+  if(workUnit==='reps'&&names.length===0&&(action.counterweight===undefined||action.counterweight===null||action.counterweight==='')){
+    const pc=numericSetValues(action.percent1rmStr),w2=numericSetValues(action.weights),c22=numericSetValues(action.counterweight2);
+    const pct=pc.length===1||pc.length===setCount?pc[pc.length===1?0:setIndex]:null;
+    if(pct!==null&&Number.isFinite(pct)&&pct>=1&&pct<=100&&c22.length&&c22.every(v=>Number.isInteger(v)&&v>=1&&v<=20)){
+      const kg2=w2.length===1||w2.length===setCount?w2[w2.length===1?0:setIndex]:null;
+      const presetName=getReferenceClientRmPresetById(presetId)?.name??`Preset ${presetId}`;
+      const hasKg=kg2!==null&&Number.isFinite(kg2)&&kg2>0&&Math.abs(kg2-3.5)>1e-9;
+      return {loadType:'percent-1rm-kg',loadUnit:hasKg?'kg':'device-managed',...(hasKg?{loadKg:kg2}:{}),percent1RM:pct,recordedPresetId:presetId,percentSource:'percent1rmStr',
+        loadDiagnostics:['percent-1rm-from-percent1rmStr'],
+        displayLoad:`${presetName} · ${pct}% 1RM${hasKg?` ≈ ${kg2} kg`:' · kg dobierze Speediance'}`};
+    }
+  }
+  if(workUnit==='reps'&&names.length===0&&['counterweight','percent1rmStr'].every(k=>action[k]===undefined||action[k]===null||action[k]==='')){
+    const w=numericSetValues(action.weights),c2=numericSetValues(action.counterweight2);
+    const kg=w.length===1||w.length===setCount?w[w.length===1?0:setIndex]:null;
+    if(kg!==null&&Number.isFinite(kg)&&kg>0&&Math.abs(kg-3.5)>1e-9&&c2.length&&c2.every(v=>Number.isInteger(v)&&v>=1&&v<=20)&&w.every(v=>v>0&&Math.abs(v-3.5)>1e-9)){
+      const text=String(kg);
+      return {loadType:'percent-1rm-kg',loadUnit:'kg',loadKg:kg,recordedPresetId:presetId,percentSource:'app-computed-from-1rm',
+        loadDiagnostics:['percent-1rm-inferred-from-preset-with-positive-weights'],
+        displayLoad:`${text} kg (%1RM, procent liczy aplikacja)`};
+    }
+  }
   for(const field of ['setsAndReps','weights','counterweight','counterweight2']){
     const raw=action[field];if(raw===undefined||raw===null||raw==='')continue;
     const parsed=numericSetValues(raw);
@@ -326,6 +353,16 @@ function resolveSavedTemplateLoadPresentationWithParser(parseNumericValues, acti
   const rmLevel2 = numericSetValueAt(counterweights2, setIndex, setCount);
   const presetId = getTemplatePresetId(action);
   const hasPresetIdField = action.templatePresetId !== undefined || action.presetId !== undefined;
+  // Percent shape (counterweight absent, percent1rmStr per set) is shown as percent and kg, never as a bare Smart RM preset.
+  if (isObservedRmPresetAction(action) && action.percent1rmStr !== undefined && action.percent1rmStr !== null && action.percent1rmStr !== '' && (workUnit ?? 'reps') === 'reps') {
+    const pc = parseNumericValues(action.percent1rmStr);
+    const pct = pc.length === 1 || pc.length === setCount ? pc[pc.length === 1 ? 0 : setIndex] : null;
+    if (pct !== null && Number.isFinite(pct) && pct >= 1 && pct <= 100) {
+      const hasKg = weight !== null && Number.isFinite(weight) && weight > 0 && Math.abs(weight - 3.5) > 1e-9;
+      const presetName = getReferenceClientRmPresetById(presetId)?.name ?? ('Preset ' + presetId);
+      return { loadType: 'percent-1rm-kg', loadUnit: hasKg ? 'kg' : 'device-managed', ...(hasKg ? { loadKg: weight } : {}), percent1RM: pct, recordedPresetId: presetId, percentSource: 'percent1rmStr', technicalRmLevel2: rmLevel2, loadDiagnostics: ['percent-1rm-from-percent1rmStr'], displayLoad: presetName + ' · ' + pct + '% 1RM' + (hasKg ? ' ≈ ' + weight + ' kg' : ' · kg dobierze Speediance') };
+    }
+  }
   if (isObservedRmPresetAction(action)) {
     const name = [action.templatePresetName, action.presetName, action.templatePreset, action.preset]
       .find((value) => typeof value === 'string' && value.trim());
@@ -726,7 +763,14 @@ export function applySmartRmConversions(currentActions, conversions, { primaryGo
     }
     const presetId = referenceClientPreset.id;
     conversion.sets.forEach((set, setIndex) => {
-      try { set.rmLevel = validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName }).rmLevel; }
+      try {
+        const explicitRmLevel = set.rmLevel !== undefined;
+        set.rmLevel = validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName }).rmLevel;
+        // Smart RM always carries a percent: from reps+RIR when RIR is known, otherwise from the preset default level; kg are left to Speediance.
+        // An explicitly supplied level (reviewed import / observed preset) is written back unchanged.
+        if (!explicitRmLevel) set.percentResolved = resolvePercent1RMSet({ reps: set.reps, rirTarget: set.rirTarget, presetName, goalLabel: presetName, presetDefaultLevel: set.rmLevel });
+        if (set.percentResolved) set.rmLevel = set.percentResolved.rmLevel;
+      }
       catch (error) { throw new Error(`Ćwiczenie ${actionIndex + 1}, seria ${setIndex + 1}: ${error.message} Niczego nie zmieniono.`); }
     });
     const loadPayload = buildExerciseLoadPayload('smart-rm', conversion.sets, { smartRmPresetName: presetName });
@@ -748,7 +792,8 @@ export function applySmartRmConversions(currentActions, conversions, { primaryGo
       countType: conversion.sets.map(() => '1').join(','),
       weights: loadPayload.weights,
       counterweight: loadPayload.counterweight,
-      counterweight2: loadPayload.counterweight2
+      counterweight2: loadPayload.counterweight2,
+      ...(loadPayload.percent1rmStr ? { percent1rmStr: loadPayload.percent1rmStr } : {})
     };
   });
   for (const key of conversionByKey.keys()) {

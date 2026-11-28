@@ -368,7 +368,7 @@ export function recommendReferenceClientRmPresetForReps(reps) {
  * serializer does not publish an arithmetic mapping from reps/RIR or expose
  * the device's RM-to-resistance calculation.
  */
-export function validateReferenceClientRmLevel({ rmLevel, reps, presetName } = {}) {
+export function validateReferenceClientRmLevel({ rmLevel, reps, presetName } = {}, { allowPercentLevel = false } = {}) {
   const rules = getReferenceClientRmPresetRules(presetName);
   if (!rules) throw new Error(`Nieznany preset RM „${String(presetName ?? '')}”; obsługiwane są wyłącznie dokładnie nazwane presety klienta referencyjnego.`);
   if (!Number.isSafeInteger(reps) || reps < 1 || reps > MAX_PRESET_REPS) {
@@ -382,7 +382,8 @@ export function validateReferenceClientRmLevel({ rmLevel, reps, presetName } = {
   if (!Number.isSafeInteger(resolvedRmLevel) || resolvedRmLevel < 1 || resolvedRmLevel > 20) {
     throw new RangeError('Poziom RM musi być całkowitą wartością 1–20 przekazywaną osobno przez klienta referencyjnego.');
   }
-  if (resolvedRmLevel < rules.minRmLevel || resolvedRmLevel > rules.maxRmLevel) {
+  // %1RM sets take their level from the percent table (4–20); only the default-level selector is limited to the preset's level range.
+  if (!(allowPercentLevel && resolvedRmLevel >= 4) && (resolvedRmLevel < rules.minRmLevel || resolvedRmLevel > rules.maxRmLevel)) {
     throw new RangeError(`Preset ${presetName} obsługuje poziom RM ${rules.minRmLevel}–${rules.maxRmLevel}; podano ${resolvedRmLevel}.`);
   }
   return {
@@ -524,8 +525,10 @@ function getProfileOneRepMax(strengthAnchor) {
   throw new TypeError('Obciążenie z profilu wymaga jawnego 1RM albo aktualnego ciężaru roboczego z powtórzeniami dla dokładnego ćwiczenia.');
 }
 
-export function buildExerciseLoadPayload(loadType, sets, { fixedKgAuthorized = false, staticLoadRequested = false, strengthAnchor, displayUnit, exerciseContext, smartRmPresetName, staticLoadProtocol = 'legacy-reference-client-wire-lb-get-kg' } = {}) {
+export function buildExerciseLoadPayload(loadType, sets, { fixedKgAuthorized = false, staticLoadRequested = false, strengthAnchor, displayUnit, exerciseContext, smartRmPresetName, percentLoad = false, staticLoadProtocol = 'legacy-reference-client-wire-lb-get-kg' } = {}) {
   const effectiveLoadType = loadType ?? inferDefaultLoadType(sets, exerciseContext?.title, exerciseContext?.movementKind);
+  // Smart RM always carries a percent when the plan resolved one (percent-1rm.mjs): level + percent1rmStr, kg estimated or left to Speediance.
+  if (effectiveLoadType === 'smart-rm' && Array.isArray(sets) && sets.length > 0 && sets.every((set) => set?.percentResolved)) percentLoad = true;
   assertPilatesResistanceSupported({
     ...(exerciseContext || {}),
     loadType: effectiveLoadType,
@@ -600,7 +603,16 @@ export function buildExerciseLoadPayload(loadType, sets, { fixedKgAuthorized = f
     ? sets.map((set, index) => {
       if (plannedWork[index].unit !== 'reps') throw new TypeError(`Smart RM wymaga powtórzeń w serii ${index + 1}; nie zamieniaj czasu na RM.`);
       if (set.targetPercent1RM !== undefined) throw new TypeError(`Seria ${index + 1}: klient referencyjny nie przekazuje procentu do pola RM; nie zapisuję targetPercent1RM.`);
-      return validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: smartRmPresetName });
+      if (percentLoad) {
+        // %1RM mode: the level comes from the percent table (percent-1rm.mjs), not the preset default range.
+        const resolved = set.percentResolved;
+        if (!resolved || !Number.isSafeInteger(resolved.rmLevel) || resolved.rmLevel < 4 || resolved.rmLevel > 20 || !/^\d+(\.\d)?$/.test(String(resolved.weightWire))) {
+          throw new TypeError(`Seria ${index + 1}: %1RM wymaga rozwiązanego percentResolved (poziom RM i kg).`);
+        }
+        validateReferenceClientRmLevel({ reps: set.reps, presetName: smartRmPresetName });
+        return { prescribedReps: set.reps, rmLevel: resolved.rmLevel, presetName: smartRmPresetName, method: 'percent-1rm-table' };
+      }
+      return validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: smartRmPresetName }, { allowPercentLevel: Boolean(set.percentResolved) });
     })
     : [];
   const calculatedDisplayLoads = profileLoadType
@@ -613,7 +625,9 @@ export function buildExerciseLoadPayload(loadType, sets, { fixedKgAuthorized = f
       return targetDisplayLoad;
     })
     : [];
-  const weights = sets.map((set, index) => effectiveLoadType === 'smart-rm'
+  const weights = sets.map((set, index) => percentLoad && effectiveLoadType === 'smart-rm'
+    ? String(set.percentResolved.weightWire)
+    : effectiveLoadType === 'smart-rm'
     ? '3.5'
     : effectiveLoadType === 'fixed-kg'
     ? formatFixedKgForApi(set.weightKg, displayUnit, staticLoadProtocol)
@@ -645,8 +659,10 @@ export function buildExerciseLoadPayload(loadType, sets, { fixedKgAuthorized = f
   return {
     weights: weights.join(','),
     counters: counters.join(','),
+    // %1RM as saved by the app: counterweight stays empty, counterweight2 carries the RM level.
     counterweight: counters.join(','),
     counterweight2: counters.join(','),
+    ...(percentLoad ? { counterweight: '', percent1rmStr: sets.map((set) => String(set.percentResolved.percent1RM)).join(',') } : {}),
     capacity,
     ...(profileLoadType ? {
       loadEstimates: loadEstimates.map((estimate) => ({
@@ -663,3 +679,133 @@ export function buildExerciseLoadPayload(loadType, sets, { fixedKgAuthorized = f
 // They are not used to calculate new per-set loads.
 export const MAX_PRESET_REPS = 20;
 import { encodeStaticLoad, staticLoadBeforeWireRounding } from './static-load-protocol.mjs';
+
+// ---- %1RM for Smart RM (kept in this module so every plan harness that spreads program-payload exports can use it) ----
+// %1RM (percent-1rm) for Smart RM presets, serialized like the Speediance app:
+// templatePresetId + level '0' + weights = kg + counterweight2 = RM level, counterweight empty.
+// The percent itself is never stored; the app shows it from weights/1RM.
+
+/** Percent ranges offered by the app per preset (user-reported). */
+export const PERCENT_1RM_PRESET_RANGES = Object.freeze({
+  'gain muscle': Object.freeze({ min: 50, max: 90 }),
+  stamina: Object.freeze({ min: 50, max: 70 }),
+  strength: Object.freeze({ min: 50, max: 90 }),
+});
+
+/**
+ * RM level -> percent as the app shows it. Equals REFERENCE_CLIENT_REPORTED_REP_MAX_CURVE
+ * (levels 4..20) except level 12, where the app sample (70% -> counterweight2 12) differs
+ * from the captured curve (.67). Levels 1-3 (>90%) are not offered by any preset.
+ */
+export const PERCENT_1RM_BY_RM_LEVEL = Object.freeze(Object.fromEntries(
+  Object.entries(REFERENCE_CLIENT_REPORTED_REP_MAX_CURVE)
+    .filter(([level]) => Number(level) >= 4)
+    .map(([level, ratio]) => [Number(level), Number(level) === 12 ? 70 : Math.round(ratio * 100)])
+));
+
+const LEVEL_BY_PERCENT = new Map(Object.entries(PERCENT_1RM_BY_RM_LEVEL).map(([level, percent]) => [percent, Number(level)]));
+const ALLOWED_SOURCES = new Set(['user-confirmed-one-rep-max', 'speediance-reported', 'local-training-profile', 'speediance-estimated']);
+
+function rangeFor(presetName) {
+  const rules = getReferenceClientRmPresetRules(presetName);
+  const key = typeof presetName === 'string' ? presetName.trim().replace(/[_-]+/g, ' ').toLocaleLowerCase('en-US') : '';
+  const range = PERCENT_1RM_PRESET_RANGES[key];
+  if (!rules || !range) throw new Error(`Nieznany preset %1RM „${String(presetName ?? '')}”; użyj Gain Muscle, Stamina albo Strength.`);
+  return { rules, range };
+}
+
+export function allowedPercents(presetName) {
+  const { range } = rangeFor(presetName);
+  return [...LEVEL_BY_PERCENT.keys()].filter((p) => p >= range.min && p <= range.max).sort((a, b) => a - b);
+}
+
+/** 1RM must be explicit, in kg, and from a named source; otherwise reject (no guessing). */
+export function validateOneRepMaxSource(oneRepMax) {
+  if (!oneRepMax || typeof oneRepMax !== 'object' || Array.isArray(oneRepMax)) {
+    throw new Error('%1RM wymaga 1RM ćwiczenia: podaj percentLoad.oneRepMax {value, unit:"kg", source}. Brak 1RM — nie zgaduję kilogramów.');
+  }
+  const { value, unit, source } = oneRepMax;
+  if (unit !== 'kg') throw new Error('%1RM: 1RM musi być podane w kg (zapis weights = kg).');
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 1 || value > 500) throw new RangeError('%1RM: 1RM musi mieścić się w 1–500 kg.');
+  if (!ALLOWED_SOURCES.has(source)) throw new Error('%1RM: źródło 1RM musi być jednym z: ' + [...ALLOWED_SOURCES].join(', ') + '.');
+  return { value, unit, source, ...(source === 'speediance-estimated' ? { approximate: true } : {}) };
+}
+
+/**
+ * Device step: up to 10 kg 0.5 kg, above 10 kg whole kg (same as Customize),
+ * rounded to nearest (half up). Matches app pairs for 43.5 / 44 / 11.1 kg 1RMs.
+ */
+export function roundPercentLoadKg(rawKg) {
+  const step = rawKg <= 10 + 1e-9 ? 0.5 : 1;
+  const kg = Math.floor(rawKg / step + 0.5 + 1e-9) * step;
+  return { kg, step, wire: step === 0.5 ? kg.toFixed(1) : String(kg) };
+}
+
+/** Auto choice: level = reps + RIR (reps in reserve), % = table[level], clamped to the preset range. */
+export function chooseAutoPercent1RM({ reps, rirTarget, presetName, goalLabel } = {}) {
+  const { rules, range } = rangeFor(presetName);
+  if (!Number.isSafeInteger(reps) || reps < rules.minReps || reps > rules.maxReps) {
+    throw new RangeError(`Preset ${presetName} obsługuje ${rules.minReps}–${rules.maxReps} powtórzeń; seria ma ${reps}.`);
+  }
+  if (!Number.isSafeInteger(rirTarget) || rirTarget < 0 || rirTarget > 5) throw new RangeError('Automatyczny dobór %1RM wymaga rirTarget 0–5 (poziom RM = powtórzenia + RIR).');
+  const wanted = Math.min(20, Math.max(4, reps + rirTarget));
+  let level = wanted;
+  const levels = Object.keys(PERCENT_1RM_BY_RM_LEVEL).map(Number).sort((a, b) => a - b);
+  while (PERCENT_1RM_BY_RM_LEVEL[level] > range.max && level < 20) level += 1;
+  while (PERCENT_1RM_BY_RM_LEVEL[level] < range.min && level > levels[0]) level -= 1;
+  const percent = PERCENT_1RM_BY_RM_LEVEL[level];
+  const clamped = level !== wanted || reps + rirTarget !== wanted;
+  return {
+    percent1RM: percent, rmLevel: level, method: 'auto-reps-plus-rir', clamped,
+    rationale: `${goalLabel ?? presetName}: ${reps} powt. + RIR ${rirTarget} → poziom ${reps + rirTarget}${clamped ? ` (przycięty do ${level}, zakres presetu ${range.min}–${range.max}%)` : ''} → ${percent}%1RM`
+  };
+}
+
+/** Warmup helper: Smart RM cannot go below the preset floor (50%). Lighter warmups must use Customize kg. */
+export const SMART_RM_MIN_PERCENT = 50;
+export function warmupLoadRoute(targetPercent1RM) {
+  if (!Number.isFinite(targetPercent1RM) || targetPercent1RM <= 0 || targetPercent1RM > 100) throw new RangeError('Docelowy % rozgrzewki musi mieścić się w 1–100.');
+  return targetPercent1RM >= SMART_RM_MIN_PERCENT
+    ? { loadType: 'smart-rm', reason: `${targetPercent1RM}% 1RM mieści się w zakresie presetu (od ${SMART_RM_MIN_PERCENT}%): Smart RM z procentem.` }
+    : { loadType: 'customize-manual', reason: `${targetPercent1RM}% 1RM jest poniżej najniższych ${SMART_RM_MIN_PERCENT}% presetu: Customize z konkretnymi kg.` };
+}
+
+/**
+ * Resolve one set: manual percent overrides auto. Smart RM ALWAYS carries a percent
+ * (counterweight2 level + percent1rmStr). A known 1RM adds estimated kg for weights;
+ * without 1RM the server computes kg (weights = '3.5' marker, hypothesis for the trial write).
+ * A manual percent that differs from the auto choice needs percentReason when requireReason is set.
+ */
+export function resolvePercent1RMSet({ reps, rirTarget, percent1RM, percentReason, requireReason = false, presetName, oneRepMax, goalLabel, presetDefaultLevel } = {}) {
+  const source = oneRepMax === undefined ? undefined : validateOneRepMaxSource(oneRepMax);
+  const { rules, range } = rangeFor(presetName);
+  if (!Number.isSafeInteger(reps) || reps < rules.minReps || reps > rules.maxReps) throw new RangeError(`Preset ${presetName} obsługuje ${rules.minReps}–${rules.maxReps} powtórzeń; seria ma ${reps}.`);
+  let choice;
+  let auto;
+  if (rirTarget !== undefined) auto = chooseAutoPercent1RM({ reps, rirTarget, presetName, goalLabel });
+  if (percent1RM !== undefined) {
+    if (!Number.isFinite(percent1RM) || !LEVEL_BY_PERCENT.has(percent1RM)) throw new RangeError(`%1RM ${percent1RM} nie ma poziomu RM w krzywej; dozwolone: ${[...LEVEL_BY_PERCENT.keys()].sort((a, b) => a - b).join(', ')}.`);
+    if (percent1RM < range.min || percent1RM > range.max) throw new RangeError(`Preset ${presetName} obsługuje %1RM ${range.min}–${range.max}; podano ${percent1RM}.`);
+    const reason = typeof percentReason === 'string' ? percentReason.trim() : '';
+    if (reason.length > 200) throw new RangeError('percentReason może mieć maks. 200 znaków.');
+    if (requireReason && (!auto || auto.percent1RM !== percent1RM) && !reason) {
+      throw new Error(`%1RM ${percent1RM} różni się od automatycznego doboru${auto ? ' (' + auto.percent1RM + '%)' : ''}: podaj percentReason (np. seria wprowadzająca, piramida, top set + back-off, progresja albo prośba użytkownika).`);
+    }
+    choice = { percent1RM, rmLevel: LEVEL_BY_PERCENT.get(percent1RM), method: 'manual-override', clamped: false, rationale: `ręcznie ${percent1RM}%1RM${reason ? ': ' + reason : ''}` };
+  } else if (auto) {
+    choice = auto;
+  } else if (Number.isSafeInteger(presetDefaultLevel) && PERCENT_1RM_BY_RM_LEVEL[presetDefaultLevel] !== undefined) {
+    const percent = Math.min(range.max, Math.max(range.min, PERCENT_1RM_BY_RM_LEVEL[presetDefaultLevel]));
+    choice = { percent1RM: percent, rmLevel: LEVEL_BY_PERCENT.get(percent), method: 'preset-default-level', clamped: false, rationale: `${goalLabel ?? presetName}: brak RIR, domyślny poziom presetu ${presetDefaultLevel} → ${percent}%1RM` };
+  } else {
+    choice = chooseAutoPercent1RM({ reps, rirTarget, presetName, goalLabel });
+  }
+  const base = { ...choice, presetName, inputs: { reps, ...(rirTarget === undefined ? {} : { rirTarget }), ...(percent1RM === undefined ? {} : { percent1RM }), ...(percentReason ? { percentReason: String(percentReason).trim() } : {}), ...(presetDefaultLevel === undefined ? {} : { presetDefaultLevel }) } };
+  if (!source) {
+    return { ...base, loadKg: null, weightWire: '3.5', weightSource: 'speediance-computes',
+      preview: `${presetName} · ${choice.percent1RM}% 1RM (poziom RM ${choice.rmLevel}), kg dobierze Speediance; ${choice.rationale}` };
+  }
+  const rounded = roundPercentLoadKg(source.value * choice.percent1RM / 100);
+  return { ...base, loadKg: rounded.kg, weightWire: rounded.wire, roundingStepKg: rounded.step, oneRepMax: source, weightSource: 'gm-coach-estimate',
+    preview: `${presetName} · ${choice.percent1RM}% 1RM ≈ ${rounded.kg} kg (poziom RM ${choice.rmLevel}; 1RM ${source.value} kg [${source.source}${source.approximate ? ', szacunek' : ''}]); ${choice.rationale}` };
+}

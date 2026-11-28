@@ -1,0 +1,14 @@
+{
+  "name": "gm-coach",
+  "owner": {
+    "name": "GM Coach"
+  },
+  "plugins": [
+    {
+      "name": "gm-coach",
+      "source": "./plugin",
+      "description": "Local Speediance coaching plugin for Gym Monster.",
+      "version": "1.0.692"
+    }
+  ]
+}

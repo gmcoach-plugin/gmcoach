@@ -177,23 +177,37 @@ async function installPackage({ root, name, integrity, version, force, nativePat
   }
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
+export async function installKeyringRuntime({ root, platform, arch, libc, force = false }) {
   const runtime = JSON.parse(await readFile(path.join(SCRIPT_DIR, 'keyring-runtime.json'), 'utf8'));
-  const target = targetKey(args);
+  const target = targetKey({ platform, arch, libc });
   const platformPackage = runtime.targets[target];
   if (!platformPackage) throw new Error(`No pinned keyring binding is published for ${target}.`);
-  const root = path.resolve(args.root);
-  await installPackage({ root, name: runtime.root.name, integrity: runtime.root.integrity, version: runtime.version, force: Boolean(args.force) });
-  const nativeTarget = args.platform === 'win32'
-    ? `win32-${args.arch}-msvc`
+  const resolvedRoot = path.resolve(root);
+  await installPackage({ root: resolvedRoot, name: runtime.root.name, integrity: runtime.root.integrity, version: runtime.version, force: Boolean(force) });
+  const nativeTarget = platform === 'win32'
+    ? `win32-${arch}-msvc`
     : target;
   const nativePattern = new RegExp(`^keyring\\.${nativeTarget}\\.node$`);
-  await installPackage({ root, name: platformPackage.name, integrity: platformPackage.integrity, version: runtime.version, force: Boolean(args.force), nativePattern });
-  process.stdout.write(`Installed pinned ${runtime.root.name}@${runtime.version} for ${target}.\n`);
+  await installPackage({ root: resolvedRoot, name: platformPackage.name, integrity: platformPackage.integrity, version: runtime.version, force: Boolean(force), nativePattern });
+  return { name: runtime.root.name, version: runtime.version, target };
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error?.message || 'Failed to install the pinned OS credential-store runtime.'}\n`);
-  process.exitCode = 1;
-});
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const installed = await installKeyringRuntime(args);
+  process.stdout.write(`Installed pinned ${installed.name}@${installed.version} for ${installed.target}.\n`);
+}
+
+function invokedDirectly() {
+  if (!process.argv[1]) return false;
+  const self = fileURLToPath(import.meta.url);
+  const invoked = path.resolve(process.argv[1]);
+  return process.platform === 'win32' ? self.toLowerCase() === invoked.toLowerCase() : self === invoked;
+}
+
+if (invokedDirectly()) {
+  main().catch((error) => {
+    process.stderr.write(`${error?.message || 'Failed to install the pinned OS credential-store runtime.'}\n`);
+    process.exitCode = 1;
+  });
+}

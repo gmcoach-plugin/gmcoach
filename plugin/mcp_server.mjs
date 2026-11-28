@@ -118,9 +118,11 @@ import { applyReferenceClientResistanceModeUpdates, applySmartRmConversions, ass
 import { normalizeAccountSavedTemplateUnitMemory, indexRememberedSavedTemplateUnits, mergeRememberedSavedTemplateUnits, normalizeSavedTemplateUnitMemory, savedTemplateUnitSignalFingerprint } from './saved-template-unit-memory.mjs';
 import { createSessionRecovery, isSafeToRetryAfterSessionRefresh } from './session-recovery.mjs';
 import { createCredentialStore, CredentialStoreError } from './credential-store.mjs';
+import { createKeyringLoader, createCliBootstrap, bundledCliPath } from './runtime-bootstrap.mjs';
 import { resolvePluginDataDirectory } from './plugin-data-directory.mjs';
 import { classifyProfileReadinessError, createProfileReadinessError } from './account-readiness.mjs';
 import { getConfirmedExerciseName, projectGroupPresetApiDiagnostic, loadExerciseLibraryFromTabs, recoverSavedPresentationNames, collectSavedPresentationNameIds, freshGroupAccessoryRequirements } from './exercise-library.mjs';
+import { resolvePercent1RMSet } from './percent-1rm.mjs';
 import { buildReferenceClientRmPresetCandidates, getReferenceClientRmPresetById, getReferenceClientRmPresetByName, hasGlobalReferenceClientRmPreset, isObservedRmPresetAction, mergePresetOptions, normalizedPresetName, resolvePresetId } from './preset-mapping.mjs';
 import { resolveGoalBoundSmartRmPresetName } from './goal-preset-routing.mjs';
 import { createSavedPlanIdentity, reconcileSavedPlanIdentity, createSavedEditOccurrenceMapping } from './saved-plan-identity.mjs';
@@ -302,7 +304,7 @@ function recordTimeCalibration(profile, batch) {
   } catch { return null; }
 }
 const readTrainingResearchBatchProjection = createResearchBatchProjectionReader({getBatch:trainingResearch.getBatch,now:Date.now});
-const credentialStore = createCredentialStore();
+const credentialStore = createCredentialStore({ loadKeyring: createKeyringLoader() });
 const EXERCISE_LIBRARY_CACHE_TTL_MS = 6 * 60 * 60_000;
 let setupServerPromise = null;
 const verifiedReadBatchExpiryErrors = new WeakSet();
@@ -1389,6 +1391,7 @@ function programSchema({ allowQuickTest = false } = {}) {
             loadType: { type: 'string', enum: ['smart-rm', 'profile-auto', 'customize-manual', 'fixed-kg', 'bodyweight', 'cardio', 'vita'], description: 'Domyślnie nazwany Smart RM bez 1RM/kg. Jawne isDeload=true zmienia domyślną ścieżkę głównych oporowych serii reps na manual Customize, jeśli podano potwierdzone/porównywalne weight+weightUnit dla każdej serii; bez tego zwraca wymagane obciążenia, nigdy Smart RM. Bodyweight/czas bez zmian. Poza deloadem Customize/fixed-kg wymagają osobnej prośby, kotwicy lub ręcznego ciężaru oraz jednostki.' },
             trainingGoal:{type:'string',enum:['hypertrophy','strength','endurance'],description:'Explicit user adaptation for THIS exercise only. Omitted inherits main goal. Does not change saved profile; full science required.'},
             smartRmPresetName: { type: 'string', enum: ['Gain Muscle', 'Strength', 'Stamina'], description: 'Explicit exercise trainingGoal takes precedence; otherwise main goal. Zwykle pomiń: serwer dobiera preset na podstawie intakeAnswers.primaryGoal albo zapisanego celu. Hipertrofia/budowanie mięśni wybiera Gain Muscle; siła Strength; wytrzymałość Stamina. Redukcja/rekompozycja/ogólne przytycie wymagają doprecyzowania bodźca. Widoczne w UI klienta referencyjnego zakresy/start: Gain Muscle 9–13/13, Stamina 15–20/17, Strength 4–9/7; używaj wartości startowej wyłącznie jako ukrytego adaptera, nie jako dawki ani wyboru badawczego. Nie wyprowadzaj licznika RM z reps/RIR/%1RM. Jawna wartość musi zgadzać się z celem.' },
+            percentLoad: { type: 'object', additionalProperties: false, required: ['oneRepMax'], description: 'Opcjonalnie, gdy znasz 1RM ćwiczenia w kg (z już odczytanych statystyk albo od użytkownika): podgląd pokaże szacowane kg i wyśle weights zgodne z %. Procent Smart RM serwer dobiera zawsze sam (reps+RIR, zakres presetu); bez 1RM kg dobierze Speediance.', properties: { oneRepMax: { type: 'object', additionalProperties: false, required: ['value', 'unit', 'source'], properties: { value: { type: 'number', minimum: 1, maximum: 500 }, unit: { type: 'string', enum: ['kg'] }, source: { type: 'string', enum: ['user-confirmed-one-rep-max', 'speediance-reported', 'local-training-profile', 'speediance-estimated'] } } } } },
             smartRmPresetId: { type: 'integer', enum: [1, 3, 5], description: 'Zwykle pomiń. Publiczne menu klienta referencyjnego używa ID 1=Gain Muscle, 3=Stamina, 5=Strength. Wariant ćwiczenia wybiera się oddzielnie z API.' },
             userRequestedRepScheme: { type: 'boolean', description: 'true, gdy użytkownik wprost chce tych powtórzeń w seriach (np. 5 i 15). Serwer zachowa je i dobierze zapis (kolejne wpisy ćwiczenia z presetem pasującym do serii) zamiast blokować. Bez tego pola powtórzenia Smart RM są dopasowywane do zakresu presetu.' },
             setSchemeReason: { type: 'string', maxLength: 300, description: 'Jedno zdanie, dlaczego różne powtórzenia w seriach (piramida, top set + back-off) pomagają celowi.' },
@@ -1433,6 +1436,8 @@ function programSchema({ allowQuickTest = false } = {}) {
                   weightUnit: { type: 'string', enum: ['kg', 'lb'], description: 'Customize: jednostka konta dla wskazanej serii, weryfikowana z API; w deloadzie wymagana razem z weight dla każdej serii statycznej.' },
             weightKg: { type: 'number', minimum: 0.1, maximum: 500, multipleOf: 0.1, description: 'Wymagane wyłącznie dla loadType=fixed-kg po jawnej prośbie o ręcznie wybrany ciężar w kg dla ćwiczenia (userRequestedFixedKg=true) albo całego planu (fixedKgRequestedForWholeWorkout=true).' },
                   mode: { type: 'integer', enum: [1, 2, 3], description: 'Kody trybu szablonu klienta referencyjnego: 1=Standard, 2=Chain, 3=Eccentric; przekazywane do sportMode bez zmiany. GM1 ma sprzętowy Constant, ale to pole go nie zapisuje; Spotter to osobna asysta. Wybieraj tryb specjalny tylko gdy cel, ćwiczenie, badania i preferencja go uzasadniają.' },
+                  percent1RM: { type: 'integer', minimum: 50, maximum: 90, description: 'Ręczne %1RM serii Smart RM (ma pierwszeństwo przed automatycznym doborem; musi mieć poziom w krzywej i mieścić się w zakresie presetu). Zwykle pomiń: serwer sam dobiera % z reps+RIR dla każdej serii Smart RM.' },
+                  percentReason: { type: 'string', minLength: 1, maxLength: 200, description: 'Wymagane, gdy percent1RM różni się od automatycznego doboru (seria wprowadzająca, piramida, top set + back-off, progresja albo prośba użytkownika); pokazywane w podglądzie.' },
                   restSeconds: { type: 'integer', minimum: 0, maximum: 600, description: 'Jawna długość przerwy dla tej konkretnej serii w sekundach.' }
                 },
                 required: ['unit', 'mode', 'restSeconds'],
@@ -2088,7 +2093,7 @@ function approvalPage(approval) {
         : ['fixed-kg', 'customize-manual'].includes(exercise.loadType) ? 'ręczne obciążenie; ' : 'masa ciała; ';
     const legacyPairedSideTransition = exercise.sideTransitionSeconds === undefined && exercise.unilateralPrescription !== 'explicit-sides' && payload?.actionLibraryList?.some(action => action.groupId === exercise.id && String(action.leftRight).split(',').includes('1') && String(action.leftRight).split(',').includes('2'));
     const sideTransitionDisplay = exercise.sideTransitionSeconds === undefined ? (legacyPairedSideTransition ? '<p>Starszy zapis: techniczna zmiana strony 1 s; nie jest rekomendacją regeneracji.</p>' : '') : `<p>Zmiana strony: ${exercise.sideTransitionSeconds} s (czas organizacyjny, nie odpoczynek); przerwa serii po obu stronach. ${escapeHtml(exercise.sideTransitionRationale)}</p>`;
-    const sets = exercise.sets.map((set) => `${set.side === undefined || set.side === 0 ? '' : set.side === 1 ? 'Lewa · ' : 'Prawa · '}${set.unit === 'sec' ? `${set.durationSeconds} s` : `${set.reps} powt.`}${exercise.loadType === 'vita' ? ` · Vita level ${set.level}` : ''}${set.rirTarget !== undefined ? ` · RIR ${set.rirTarget}` : ''}${set.intensity !== undefined ? ` · intens. ${set.intensity}/10` : ''}${exercise.loadType === 'profile-auto' && set.loadEstimate ? ` · ${Math.round(set.loadEstimate.targetPercent1RM * 100)}% ${set.loadEstimate.approximate ? 'szacowanego e1RM' : '1RM'}${set.loadEstimate.approximate ? ` · źródło: ${escapeHtml(set.loadEstimate.anchorEvidenceSource ?? exercise.strengthAnchor.source)} · ${escapeHtml(set.loadEstimate.workingSetAssumption ?? (set.loadEstimate.workingRir === undefined ? 'metoda oszacowania niepodana' : `${set.loadEstimate.workingRir} RIR`))}` : ''}${approval.preview?.showCalculatedLoads ? ` ≈ ${set.calculatedLoad} ${set.loadUnit}${set.apiLoadNormalized ? ` · zapis API ≈ ${set.serializedDisplayWeight} ${set.serializedDisplayUnit} (normalizacja klienta referencyjnego; nie pomiar oporu)` : ''}` : ''}` : ''}${exercise.loadType === 'smart-rm' ? ` · Smart RM ${escapeHtml(exercise.smartRmPresetName ?? 'preset RM')} · opór dobiera urządzenie` : ''}${exercise.loadType === 'customize-manual' ? ` · wybrano ${set.weight} ${set.weightUnit}${set.loadStepNormalized ? ` (podano ${set.requestedWeight} ${set.weightUnit}; krok urządzenia: do 10 kg co 0,5, powyżej pełne kg)` : ''}${set.apiLoadNormalized ? ` · zapis API ≈ ${set.serializedDisplayWeight} ${set.serializedDisplayUnit} (normalizacja klienta referencyjnego; nie pomiar oporu)` : ''}` : ''}${exercise.loadType === 'fixed-kg' ? ` · ${set.weightKg} kg` : ''} · ${escapeHtml(RESISTANCE_MODES[set.mode])} · przerwa ${set.rest} s`).join('<br>');
+    const sets = exercise.sets.map((set) => `${set.side === undefined || set.side === 0 ? '' : set.side === 1 ? 'Lewa · ' : 'Prawa · '}${set.unit === 'sec' ? `${set.durationSeconds} s` : `${set.reps} powt.`}${exercise.loadType === 'vita' ? ` · Vita level ${set.level}` : ''}${set.rirTarget !== undefined ? ` · RIR ${set.rirTarget}` : ''}${set.intensity !== undefined ? ` · intens. ${set.intensity}/10` : ''}${exercise.loadType === 'profile-auto' && set.loadEstimate ? ` · ${Math.round(set.loadEstimate.targetPercent1RM * 100)}% ${set.loadEstimate.approximate ? 'szacowanego e1RM' : '1RM'}${set.loadEstimate.approximate ? ` · źródło: ${escapeHtml(set.loadEstimate.anchorEvidenceSource ?? exercise.strengthAnchor.source)} · ${escapeHtml(set.loadEstimate.workingSetAssumption ?? (set.loadEstimate.workingRir === undefined ? 'metoda oszacowania niepodana' : `${set.loadEstimate.workingRir} RIR`))}` : ''}${approval.preview?.showCalculatedLoads ? ` ≈ ${set.calculatedLoad} ${set.loadUnit}${set.apiLoadNormalized ? ` · zapis API ≈ ${set.serializedDisplayWeight} ${set.serializedDisplayUnit} (normalizacja klienta referencyjnego; nie pomiar oporu)` : ''}` : ''}` : ''}${exercise.loadType === 'smart-rm' ? (set.percentResolved ? ` · ${escapeHtml(exercise.smartRmPresetName ?? 'preset RM')} · ${set.percentResolved.percent1RM}% 1RM${set.percentResolved.loadKg == null ? ' · kg dobierze Speediance' : ` ≈ ${set.percentResolved.loadKg} kg`}` : ` · Smart RM ${escapeHtml(exercise.smartRmPresetName ?? 'preset RM')} · opór dobiera urządzenie`) : ''}${exercise.loadType === 'customize-manual' ? ` · wybrano ${set.weight} ${set.weightUnit}${set.loadStepNormalized ? ` (podano ${set.requestedWeight} ${set.weightUnit}; krok urządzenia: do 10 kg co 0,5, powyżej pełne kg)` : ''}${set.apiLoadNormalized ? ` · zapis API ≈ ${set.serializedDisplayWeight} ${set.serializedDisplayUnit} (normalizacja klienta referencyjnego; nie pomiar oporu)` : ''}` : ''}${exercise.loadType === 'fixed-kg' ? ` · ${set.weightKg} kg` : ''} · ${escapeHtml(RESISTANCE_MODES[set.mode])} · przerwa ${set.rest} s`).join('<br>');
     return `<tr><td>${escapeHtml(exercise.title)} (ID ${exercise.id})</td><td>${escapeHtml(load)}${sideTransitionDisplay}${sets}</td></tr>`;
   }).join('');
   const uniqueExcerptsByEvidenceId = new Map();
@@ -2169,7 +2174,9 @@ function approvalPage(approval) {
     : approval.editPatch?.resistance_mode_updates?.map(item => `${item.groupId}/${item.actionLibraryId}: ${item.modes.map(mode => RESISTANCE_MODES[mode] ?? String(mode)).join('; ')}`) ?? [];
   const patchSummary = patchItems.length ? `<h2>Zatwierdzana poprawka istniejącego treningu</h2><ul>${patchItems.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul><p>Poprawka jest powiązana z pełnym planem i zakresem zmian pokazanymi poniżej. Zapis ponownie sprawdzi naukę i gotowość presetu.</p>` : '';
   const preferenceDisclosure = approval.plan.preferenceCompliance ? `<h2>Preferencje: zakres kontroli</h2><p>${escapeHtml(approval.plan.preferenceCompliance.status)}. Brak potwierdzonej sprzeczności nie potwierdza zgodności. Sprawdź nierozstrzygnięte preferencje przed akceptacją; źródła naukowe ich nie zastępują.</p><p>${escapeHtml(approval.plan.preferenceCompliance.bodyweightExclusionScope)}. ${escapeHtml(approval.plan.preferenceCompliance.abdominalExclusionScope)}.</p><table><thead><tr><th>Preferencja</th><th>Zakres</th><th>Status / ograniczenie</th></tr></thead><tbody>${[...approval.plan.preferenceCompliance.checks, ...approval.plan.preferenceCompliance.reviews].map(item => `<tr><td>${escapeHtml(item.field)}: ${escapeHtml(item.requested)}</td><td>${escapeHtml(item.scope || `Ćwiczenie ${item.exerciseIndex + 1}`)}</td><td>${escapeHtml(item.status)}: ${escapeHtml(item.limitation)}</td></tr>`).join('')}</tbody></table>` : '';
-  let form = `${preferenceDisclosure}<p><strong>Profil:</strong> ${escapeHtml(approval.profile)}</p><p><strong>Program zapisany pod nazwą:</strong> ${escapeHtml(approval.payload.name)}</p>${approval.plan.scheduleDate ? `<p><strong>Termin kalendarza Speediance:</strong> ${escapeHtml(approval.plan.scheduleDate)}</p>` : ''}<h2>Uzasadnienie planu</h2><p>${escapeHtml(approval.plan.rationale)}</p><p><strong>Zakres zapisu:</strong> uwzględnione rozgrzewka i rozciąganie są zapisywane jako ćwiczenia w szablonie Speediance, odpowiednio przed i po części głównej. Jeśli ustawiono datę, kalendarz wskazuje ten szablon. Sekcje pominięte na życzenie użytkownika nie są dodawane. Superserie są zapisywane jako naprzemienne pojedyncze serie z przerwami po przejściu i po rundzie; API nie zwraca osobnego ID grupy superserii. Dla Row/Ski tag intensywności w nazwie programu jest jedynym zapisanym celem cardio 1–10; Speediance nie otrzymuje osobnego pola intensywności per seria.</p><h2>Rozgrzewka</h2>${warmupContent}<h2>Rozciąganie po treningu</h2>${stretchingContent}<p><small>Rozciąganie jest tu elementem elastyczności i zakresu ruchu. Nie jest przedstawiane jako sposób na szybszą regenerację ani zapobieganie urazom.</small></p><h2>Superserie i kolejność zapisu</h2>${supersetContent}<h2>Kontrola decyzji naukowych</h2><table><thead><tr><th>Decyzja</th><th>Status</th><th>Wartość, ocena asystenta i przypisane źródła/cytaty</th></tr></thead><tbody>${decisionRows}</tbody></table><h2>Źródła i ograniczenia</h2><ul>${evidenceItems}</ul><p><small>Serwer potwierdził pochodzenie PMID, tytułu, roku i URL oraz literalne fragmenty abstraktów z odpowiadających batchy PubMed; wyszukiwarka wymaga kategorii treningowej i kontekstu celu. Wymagana ocena semantyczna jest deklaracją asystenta. Serwer kontroluje jej kompletność i spójność, ale nie dowodzi, że cytat, wynik, populacja, ograniczenia ani kierunek efektu rzeczywiście uzasadniają wartość planu. Sprawdź interpretację asystenta i rekord źródłowy przed zgodą.</small></p><h2>Ćwiczenia i serie</h2><table><thead><tr><th>Ćwiczenie</th><th>Serie</th></tr></thead><tbody>${exerciseRows}</tbody></table><h2>Wynik podglądu Speediance</h2><pre>${preview}</pre><p><strong>Nie musisz nic klikać na tej stronie.</strong> Po sprawdzeniu planu zaakceptuj go w rozmowie; GM Coach zapisze program i, jeśli ustawiono datę, doda go do kalendarza.</p>`;
+  const percentRationale = (approval.executionExercises ?? approval.plan.exercises).flatMap((exercise) => exercise.sets.filter((set) => set.percentResolved).map((set, index) => `<li>${escapeHtml(exercise.title)}, seria ${index + 1}: ${escapeHtml(set.percentResolved.preview)}</li>`));
+  const percentRationaleHtml = percentRationale.length ? `<h3>Obciążenie %1RM: uzasadnienie</h3><ul>${percentRationale.join('')}</ul><p><small>Kg = 1RM × % zaokrąglone do kroku urządzenia; aplikacja Speediance może policzyć własne 1RM i różnić się o ok. 1 kg.</small></p>` : '';
+  let form = `${preferenceDisclosure}<p><strong>Profil:</strong> ${escapeHtml(approval.profile)}</p><p><strong>Program zapisany pod nazwą:</strong> ${escapeHtml(approval.payload.name)}</p>${approval.plan.scheduleDate ? `<p><strong>Termin kalendarza Speediance:</strong> ${escapeHtml(approval.plan.scheduleDate)}</p>` : ''}<h2>Uzasadnienie planu</h2><p>${escapeHtml(approval.plan.rationale)}</p><p><strong>Zakres zapisu:</strong> uwzględnione rozgrzewka i rozciąganie są zapisywane jako ćwiczenia w szablonie Speediance, odpowiednio przed i po części głównej. Jeśli ustawiono datę, kalendarz wskazuje ten szablon. Sekcje pominięte na życzenie użytkownika nie są dodawane. Superserie są zapisywane jako naprzemienne pojedyncze serie z przerwami po przejściu i po rundzie; API nie zwraca osobnego ID grupy superserii. Dla Row/Ski tag intensywności w nazwie programu jest jedynym zapisanym celem cardio 1–10; Speediance nie otrzymuje osobnego pola intensywności per seria.</p><h2>Rozgrzewka</h2>${warmupContent}<h2>Rozciąganie po treningu</h2>${stretchingContent}<p><small>Rozciąganie jest tu elementem elastyczności i zakresu ruchu. Nie jest przedstawiane jako sposób na szybszą regenerację ani zapobieganie urazom.</small></p><h2>Superserie i kolejność zapisu</h2>${supersetContent}<h2>Kontrola decyzji naukowych</h2><table><thead><tr><th>Decyzja</th><th>Status</th><th>Wartość, ocena asystenta i przypisane źródła/cytaty</th></tr></thead><tbody>${decisionRows}</tbody></table><h2>Źródła i ograniczenia</h2><ul>${evidenceItems}</ul><p><small>Serwer potwierdził pochodzenie PMID, tytułu, roku i URL oraz literalne fragmenty abstraktów z odpowiadających batchy PubMed; wyszukiwarka wymaga kategorii treningowej i kontekstu celu. Wymagana ocena semantyczna jest deklaracją asystenta. Serwer kontroluje jej kompletność i spójność, ale nie dowodzi, że cytat, wynik, populacja, ograniczenia ani kierunek efektu rzeczywiście uzasadniają wartość planu. Sprawdź interpretację asystenta i rekord źródłowy przed zgodą.</small></p><h2>Ćwiczenia i serie</h2><table><thead><tr><th>Ćwiczenie</th><th>Serie</th></tr></thead><tbody>${exerciseRows}</tbody></table>${percentRationaleHtml}<h2>Wynik podglądu Speediance</h2><pre>${preview}</pre><p><strong>Nie musisz nic klikać na tej stronie.</strong> Po sprawdzeniu planu zaakceptuj go w rozmowie; GM Coach zapisze program i, jeśli ustawiono datę, doda go do kalendarza.</p>`;
   if (approval.kind === 'saved-schedule') {
     form = form.replace(/<p><strong>Zakres zapisu:<\/strong>[\s\S]*?<\/p>/, '<p><strong>Zakres:</strong> dodanie istniejącego, niezmienionego treningu do kalendarza. Szablon i wszystkie serie pozostają zgodne z pokazanym odczytem.</p>')
       .replace('GM Coach zapisze program i, jeśli ustawiono datę, doda go do kalendarza.', 'GM Coach doda istniejący trening do kalendarza na wskazaną datę.')
@@ -2489,13 +2496,18 @@ function cliCandidates() {
     configuredPath,
     path.join(PLUGIN_ROOT, 'bin', bundledName),
     path.join(codexHome, 'plugins', 'gm-coach', 'bin', bundledName),
+    runtimeCliPath(),
     'speediance-cli',
     ...(process.platform === 'win32' ? ['speediance-cli.exe'] : [])
   ].filter(Boolean);
   return [...new Set(candidates)];
 }
 
-const cliRuntime = createCliRuntime({
+function runtimeCliPath() {
+  try { return bundledCliPath(); } catch { return null; }
+}
+
+const cliRuntimeBase = createCliRuntime({
   candidates: cliCandidates,
   probe: async (candidate) => {
     await execFile(candidate, ['version'], {
@@ -2509,6 +2521,26 @@ const cliRuntime = createCliRuntime({
     return true;
   }
 });
+
+// Plugins installed straight from a marketplace (for example GitHub) have no
+// bundled speediance-cli. Download, verify and cache it once, then retry.
+const cliBootstrap = createCliBootstrap();
+const cliRuntime = {
+  async resolve() {
+    const found = await cliRuntimeBase.resolve();
+    if (found) return found;
+    try {
+      await cliBootstrap.ensure();
+    } catch (error) {
+      process.stderr.write(`GM Coach could not prepare speediance-cli automatically: ${error?.message || error}\n`);
+      return null;
+    }
+    return cliRuntimeBase.resolve();
+  },
+  invalidate(candidate = null) {
+    cliRuntimeBase.invalidate(candidate);
+  }
+};
 
 async function resolveCli() {
   return cliRuntime.resolve();
@@ -3292,7 +3324,8 @@ async function loginProfileNative(profile, regionOverride = null, expectedBindin
 /** U2: weighted ramp-up (warmup) sets are fixed light Customize loads; Smart RM sets only main-work load. Applies to new plans and previews. */
 function assertRampUpNotSmartRm(plan) {
   for (const [index, exercise] of plan.exercises.entries()) {
-    if (exercise.section === 'warmup' && exercise.loadType === 'smart-rm') throw Object.assign(new Error('Ćwiczenie ' + (index + 1) + ' (' + (exercise.title ?? exercise.id) + '): seria rozgrzewkowa z ciężarem nie może używać Smart RM. Smart RM dobiera ciężar tylko serii głównych, a w rozgrzewce zapisuje ten sam ciężar co serie robocze. Ustaw loadType="customize-manual" ze stałym, lekkim ciężarem ok. 40–50% ciężaru roboczego z historii lub kotwicy, np. {"loadType":"customize-manual","sets":[{"unit":"reps","reps":8,"weight":<40–50% ciężaru roboczego>,"weightUnit":"kg","rest":90}]}.'), { code: 'GM_COACH_RAMP_UP_SMART_RM' });
+    const percentWarmup = exercise.loadType === 'smart-rm' && exercise.sets?.length > 0 && exercise.sets.every((set) => set.percentResolved?.method === 'manual-override' && set.percentResolved.percent1RM >= 50 && set.percentResolved.inputs?.percentReason);
+    if (exercise.section === 'warmup' && exercise.loadType === 'smart-rm' && !percentWarmup) throw Object.assign(new Error('Ćwiczenie ' + (index + 1) + ' (' + (exercise.title ?? exercise.id) + '): seria rozgrzewkowa z ciężarem nie może używać Smart RM. Smart RM w rozgrzewce wymaga jawnego percent1RM ≥ 50 z percentReason w każdej serii (np. 50–60% 1RM); lżejsza rozgrzewka (np. 30–45%) to Customize. Ustaw loadType="customize-manual" ze stałym, lekkim ciężarem ok. 40–50% ciężaru roboczego z historii lub kotwicy, np. {"loadType":"customize-manual","sets":[{"unit":"reps","reps":8,"weight":<40–50% ciężaru roboczego>,"weightUnit":"kg","rest":90}]}.'), { code: 'GM_COACH_RAMP_UP_SMART_RM' });
   }
 }
 function normalizePlan(args, storedProfileData = {}, exerciseCatalog = null, importedPolicy=null, { allowQuickTest = false } = {}) {
@@ -3499,6 +3532,12 @@ function normalizePlan(args, storedProfileData = {}, exerciseCatalog = null, imp
       if (!canonicalPreset || (smartRmPresetId !== undefined && smartRmPresetId !== canonicalPreset.id)) throw new Error('ID presetu Smart RM nie zgadza się z nazwanym presetem celu klienta referencyjnego.');
       smartRmPresetId = canonicalPreset.id;
     }
+    let percentLoad;
+    if (exercise.percentLoad !== undefined) {
+      if (loadType !== 'smart-rm') throw new Error(`Ćwiczenie ${exerciseIndex + 1}: percentLoad wymaga loadType=smart-rm.`);
+      percentLoad = exercise.percentLoad;
+      if (!percentLoad || typeof percentLoad !== 'object' || Array.isArray(percentLoad) || Object.keys(percentLoad).some(key => key !== 'oneRepMax')) throw new Error(`Ćwiczenie ${exerciseIndex + 1}: percentLoad przyjmuje wyłącznie oneRepMax {value, unit:'kg', source}.`);
+    }
     const storedAnchorRecords = savedStrengthAnchors.get(exercise.id) || [];
     const strengthAnchor = loadType === 'profile-auto'
       ? (resolveProfileStrengthAnchor({
@@ -3534,7 +3573,7 @@ function normalizePlan(args, storedProfileData = {}, exerciseCatalog = null, imp
       if (set.rmLevel !== undefined) {
         throw new Error(`Ćwiczenie ${exerciseIndex + 1}, seria ${setIndex + 1}: rmLevel jest technicznym polem adaptera klienta referencyjnego; wybierz preset celu, nie podawaj surowego poziomu RM.`);
       }
-      const publicSetKeys = new Set(['side', 'unit', 'reps', 'durationSeconds', 'level', 'intensity', 'rirTarget', 'weight', 'weightUnit', 'weightKg', 'mode', 'restSeconds']);
+      const publicSetKeys = new Set(['side', 'unit', 'reps', 'durationSeconds', 'level', 'intensity', 'rirTarget', 'weight', 'weightUnit', 'weightKg', 'mode', 'restSeconds', 'percent1RM', 'percentReason']);
       if (Object.keys(set).some(key => !publicSetKeys.has(key))) {
         throw new Error(`Ćwiczenie ${exerciseIndex + 1}, seria ${setIndex + 1}: nieobsługiwane pole serii. Użyj publicznych pól unit, reps albo durationSeconds, mode i restSeconds oraz właściwych pól obciążenia/RIR; nie kopiuj rest, resistanceMode ani setNumber z odczytu lub normalizacji.`);
       }
@@ -3570,9 +3609,29 @@ function normalizePlan(args, storedProfileData = {}, exerciseCatalog = null, imp
           set.rmValue === undefined && set.intensity === undefined
         : set.level === undefined;
       let rmLevel;
+      let percentResolved;
+      if ((set.percent1RM !== undefined || set.percentReason !== undefined) && loadType !== 'smart-rm') throw new Error(`Ćwiczenie ${exerciseIndex + 1}, seria ${setIndex + 1}: percent1RM i percentReason dotyczą wyłącznie loadType=smart-rm.`);
+      if (set.percentReason !== undefined && set.percent1RM === undefined) throw new Error(`Ćwiczenie ${exerciseIndex + 1}, seria ${setIndex + 1}: percentReason wymaga percent1RM.`);
       if (loadType === 'smart-rm' && validWorkAmount && !isTimed) {
-        try { rmLevel = validateReferenceClientRmLevel({ reps: set.reps, presetName: smartRmPresetName }).rmLevel; }
+        let presetDefaultLevel;
+        try { rmLevel = validateReferenceClientRmLevel({ reps: set.reps, presetName: smartRmPresetName }).rmLevel; presetDefaultLevel = rmLevel; }
         catch (error) { throw new Error(`Ćwiczenie ${exerciseIndex + 1}, seria ${setIndex + 1}: ${error.message}`); }
+        // Smart RM always carries a percent (level + percent1rmStr), also for imported plans: the preset is kept, the percent is imported or auto-chosen.
+        {
+          try { percentResolved = resolvePercent1RMSet({ reps: set.reps, rirTarget: set.rirTarget, percent1RM: set.percent1RM, percentReason: set.percentReason, requireReason: true, presetName: smartRmPresetName, oneRepMax: percentLoad?.oneRepMax, goalLabel: (trainingGoal ?? primaryGoal) + ' → ' + smartRmPresetName, presetDefaultLevel }); rmLevel = percentResolved.rmLevel; }
+          catch (error) { throw new Error(`Ćwiczenie ${exerciseIndex + 1}, seria ${setIndex + 1}: ${error.message}`); }
+          // Scheduled deload: the automatic percent never exceeds the baseline week's percent of the same exercise/set (min(auto, baseline)); no reason needed.
+          const deloadCap = args.deloadPercentCaps?.[`${exercise.entryId ?? exercise.id}:${setIndex}`];
+          if (deloadCap !== undefined && set.percent1RM === undefined && percentResolved.percent1RM > deloadCap) {
+            try {
+              const auto = percentResolved.percent1RM;
+              const capped = resolvePercent1RMSet({ ...percentResolved.inputs, percent1RM: deloadCap, requireReason: false, presetName: smartRmPresetName, oneRepMax: percentLoad?.oneRepMax, goalLabel: (trainingGoal ?? primaryGoal) + ' → ' + smartRmPresetName });
+              const rationale = `deload: min(auto ${auto}%, tydzień bazowy ${deloadCap}%) → ${deloadCap}%1RM`;
+              percentResolved = { ...capped, method: 'auto-deload-cap', rationale, preview: capped.preview.replace(/; [^;]*$/, '; ' + rationale) };
+              rmLevel = percentResolved.rmLevel;
+            } catch { /* baseline percent outside this preset's range: keep the automatic choice */ }
+          }
+        }
       }
       if (!validWorkAmount || !validRirTarget || needsResearchBackedRir ||
           (loadType === 'profile-auto' && (set.rmLevel !== undefined || isTimed || set.reps > MAX_PRESET_REPS)) ||
@@ -3608,7 +3667,7 @@ function normalizePlan(args, storedProfileData = {}, exerciseCatalog = null, imp
       }
       // Krok Customize urządzenia: <=10 kg co 0,5, >10 kg pełne kg; urządzenie obcina w dół (54,5->54). Zgodne z customize-load-step.mjs; lb: kg = lb×0,45359237, ten sam krok kg, wynik w lb co 0,1.
       const stepped = loadType === 'customize-manual' ? (() => { const w = set.weight, lb = set.weightUnit === 'lb'; if (!(lb || set.weightUnit === 'kg') || !(w > 0)) return { value: w, normalized: false }; const k = lb ? (w + 0.05) * 0.45359237 : w; const qk = k <= 10 + 1e-9 ? Math.floor(k * 2 + 1e-9) / 2 : Math.floor(k + 1e-9); const q = lb ? Number((qk / 0.45359237).toFixed(1)) : qk; return Math.abs(q - w) < 1e-9 ? { value: w, normalized: false } : { value: q, normalized: true, requested: w, note: lb ? w + ' lb (' + (w * 0.45359237).toFixed(2) + ' kg) nie jest dozwolone na urządzeniu (do 10 kg krok 0,5 kg, powyżej 10 kg pełne kg); urządzenie zapisze ' + qk + ' kg = ' + q + ' lb.' : w + ' kg nie jest dozwolone na urządzeniu (do 10 kg krok 0,5 kg, powyżej 10 kg pełne kg); urządzenie zapisze ' + q + ' kg.' }; })() : null;
-      return { ...(set.side === undefined ? {} : { side: set.side }), unit, ...(isTimed ? { durationSeconds: set.durationSeconds } : { reps: set.reps }), ...(loadType === 'customize-manual' ? { weight: stepped.value, weightUnit: set.weightUnit, ...(stepped.normalized ? { requestedWeight: stepped.requested, loadStepNormalized: true, loadStepNote: stepped.note } : {}) } : {}), ...(loadType === 'smart-rm' ? { rmLevel } : {}), ...(loadType === 'vita' ? { level: set.level } : {}), ...(set.rirTarget === undefined ? {} : { rirTarget: set.rirTarget }), ...(loadType === 'cardio' ? { intensity: set.intensity } : {}), ...(loadEstimate ? { loadEstimate } : {}), weightKg: set.weightKg, mode, rest };
+      return { ...(set.side === undefined ? {} : { side: set.side }), unit, ...(isTimed ? { durationSeconds: set.durationSeconds } : { reps: set.reps }), ...(loadType === 'customize-manual' ? { weight: stepped.value, weightUnit: set.weightUnit, ...(stepped.normalized ? { requestedWeight: stepped.requested, loadStepNormalized: true, loadStepNote: stepped.note } : {}) } : {}), ...(loadType === 'smart-rm' ? { rmLevel } : {}), ...(percentResolved ? { percent1RM: percentResolved.percent1RM, percentResolved } : {}), ...(loadType === 'vita' ? { level: set.level } : {}), ...(set.rirTarget === undefined ? {} : { rirTarget: set.rirTarget }), ...(loadType === 'cardio' ? { intensity: set.intensity } : {}), ...(loadEstimate ? { loadEstimate } : {}), weightKg: set.weightKg, mode, rest };
     });
     if (loadType === 'profile-auto') {
       const loadPayload = buildExerciseLoadPayload('profile-auto', sets, {
@@ -3631,7 +3690,7 @@ function normalizePlan(args, storedProfileData = {}, exerciseCatalog = null, imp
     if (suppliedSideTransition && (unilateralPrescription !== 'paired-symmetric' || !Number.isSafeInteger(exercise.sideTransitionSeconds) || exercise.sideTransitionSeconds < 1 || exercise.sideTransitionSeconds > 30 || typeof exercise.sideTransitionRationale !== 'string' || !exercise.sideTransitionRationale.trim() || exercise.sideTransitionRationale.length > 500)) throw new Error('Zmiana strony wymaga paired-symmetric, 1–30 sekund i konkretnego uzasadnienia operacyjnego.');
     if (!suppliedSideTransition && Object.hasOwn(exercise, 'sideTransitionRationale')) throw new Error('Uzasadnienie zmiany strony wymaga sideTransitionSeconds.');
     if (!['paired-symmetric', 'explicit-sides'].includes(unilateralPrescription) || (unilateralPrescription === 'paired-symmetric' && sets.some(set => set.side !== undefined)) || (unilateralPrescription === 'explicit-sides' && (sets.length % 2 !== 0 || sets.some((set, index) => set.side !== (index % 2 === 0 ? 1 : 2))))) throw new Error('Jawne serie jednostronne wymagają pełnych par lewa/prawa i explicit-sides.');
-    const normalizedExercise = { ...normalizeExerciseEntry(exercise), ...(trainingGoal===undefined?{}:{trainingGoal}), ...(suppliedSideTransition ? { sideTransitionSeconds: exercise.sideTransitionSeconds, sideTransitionRationale: exercise.sideTransitionRationale.trim() } : {}), ...(unilateralPrescription === 'explicit-sides' ? { unilateralPrescription } : {}), id: exercise.id, title: exercise.title.trim(), loadType, ...(loadType === 'vita' ? { dataStatType: 6 } : {}), ...(movementKind ? { movementKind } : {}), ...(exercise.actionLibraryId !== undefined ? { actionLibraryId: exercise.actionLibraryId } : {}), ...(strengthAnchor ? { strengthAnchor } : {}), ...(exercise.resolvedStrengthProfile ? { resolvedStrengthProfile: exercise.resolvedStrengthProfile } : {}), ...(loadType === 'smart-rm' ? { smartRmPresetName, ...(smartRmPresetId !== undefined ? { smartRmPresetId } : {}) } : {}), sets };
+    const normalizedExercise = { ...normalizeExerciseEntry(exercise), ...(trainingGoal===undefined?{}:{trainingGoal}), ...(suppliedSideTransition ? { sideTransitionSeconds: exercise.sideTransitionSeconds, sideTransitionRationale: exercise.sideTransitionRationale.trim() } : {}), ...(unilateralPrescription === 'explicit-sides' ? { unilateralPrescription } : {}), id: exercise.id, title: exercise.title.trim(), loadType, ...(loadType === 'vita' ? { dataStatType: 6 } : {}), ...(movementKind ? { movementKind } : {}), ...(exercise.actionLibraryId !== undefined ? { actionLibraryId: exercise.actionLibraryId } : {}), ...(strengthAnchor ? { strengthAnchor } : {}), ...(exercise.resolvedStrengthProfile ? { resolvedStrengthProfile: exercise.resolvedStrengthProfile } : {}), ...(percentLoad ? { percentLoad } : {}), ...(loadType === 'smart-rm' ? { smartRmPresetName, ...(smartRmPresetId !== undefined ? { smartRmPresetId } : {}) } : {}), sets };
     Object.defineProperty(normalizedExercise, 'fixedKgAuthorized', { value: fixedKgWasRequested });
     if (loadType === 'customize-manual') {
       if (new Set(sets.map(set => set.weightUnit)).size !== 1) throw new Error('Manual Customize requires one account unit for every set.');
@@ -4396,7 +4455,7 @@ async function buildReadableSavedTemplate(template, profile, unitConfirmations, 
       ...(nativeLevelOneNoLoad ? {nativeLevelInterpretation:{status:'level-one-on-confirmed-nonvita-zero-load',source:presentationType.source,readOnly:true,executableAllowed:false}} : {}),
       actionLibraryId,
       ...(action.templatePresetId !== undefined ? { templatePresetId: Number(action.templatePresetId) } : {}),
-      loadType: loadSummary.springGroups ? loadSummary.loadType : catalogConfirmsVita ? 'vita-level' : ['smart-rm-preset', 'preset-load-unknown'].includes(loadSummary.loadType) ? loadSummary.loadType : unresolvedPositiveLevel ? 'load-format-ambiguous' : loadSummary.loadType,
+      loadType: loadSummary.springGroups ? loadSummary.loadType : catalogConfirmsVita ? 'vita-level' : ['smart-rm-preset', 'preset-load-unknown', 'percent-1rm-kg'].includes(loadSummary.loadType) ? loadSummary.loadType : unresolvedPositiveLevel ? 'load-format-ambiguous' : loadSummary.loadType,
       sets: workValues.map((workValue, index) => {
         const apiResolution = resolveSavedTemplateSetUnit(action, index, workValues.length, exerciseRecord?.countType, exerciseRecord?.countTypeConflict === true, exerciseRecord);
         const explicitlyConfirmedUnit = suppliedIndex.get(rowKey)?.get(index);
@@ -4416,7 +4475,7 @@ async function buildReadableSavedTemplate(template, profile, unitConfirmations, 
               loadUnit: 'vita-level',
               displayLoad: parsedVitaLevel === null ? null : `Vita level ${parsedVitaLevel}`
             }
-          : ['smart-rm-preset', 'preset-load-unknown'].includes(springPresentation.loadType) ? springPresentation : unresolvedPositiveLevel
+          : ['smart-rm-preset', 'preset-load-unknown', 'percent-1rm-kg'].includes(springPresentation.loadType) ? springPresentation : unresolvedPositiveLevel
             ? { loadType: 'load-format-ambiguous', loadUnit: 'unknown', displayLoad: 'niejednoznaczne pole level; typ ćwiczenia nie został potwierdzony' }
             : resolveSavedTemplateLoadPresentation(action, index, workValues.length, staticLoadContext.evidenceStatus === 'invalid-reference' ? 'unknown' : displayWeightUnit, unitResolution.unit, staticLoadContext);
          return {
@@ -5154,8 +5213,19 @@ async function prepareProgramPayload(plan, profile, expectedFingerprint) {
       exercise.smartRmPresetSource = selected.source;
       exercise.smartRmActionLibraryId = actionLibraryId;
       for (const [setIndex, set] of exercise.sets.entries()) {
+        if (set.percentResolved) { // %1RM: poziom RM wynika z tabeli % (percent-1rm.mjs); przelicz, gdy preset zmienił się po doborze wg powtórzeń
+          try {
+            if (set.percentResolved.presetName !== selected.name) {
+              const inputs = set.percentResolved.inputs;
+              set.percentResolved = resolvePercent1RMSet({ ...inputs, requireReason: false, presetName: selected.name, oneRepMax: set.percentResolved.oneRepMax, goalLabel: selected.name });
+            }
+            set.rmLevel = set.percentResolved.rmLevel;
+            set.percent1RM = set.percentResolved.percent1RM;
+          } catch (error) { unresolved.push(`„${exercise.title}” seria ${setIndex + 1}: ${error.message}`); }
+          continue;
+        }
         try {
-          const rmSelection = validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: selected.name });
+          const rmSelection = validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: selected.name }, { allowPercentLevel: Boolean(set.percentResolved) });
           set.rmLevel = rmSelection.rmLevel;
           set.rmLevelValidation = set.rmLevelValidation?.method === 'reference-client-reviewed-imported-rm-level' ? {...rmSelection,method:'reference-client-reviewed-imported-rm-level'} : rmSelection;
         } catch (error) {
@@ -5721,7 +5791,7 @@ function validateCycleExecutableChanges(input, facts, chargeComparison) {
         if (set.rir?.status === 'presence-changed') unsafeOrUnknown = true;
         if (set.status === 'unmatched') { if (set.reason === 'removed-set') reduced = true; else unsafeOrUnknown = true; continue; }
         if (set.deltaAmount < 0 || set.load?.delta < 0 || set.level && set.level.to < set.level.from || set.targetIntensity && set.targetIntensity.to < set.targetIntensity.from) reduced = true;
-        if (set.deltaAmount > 0 || set.deltaRestSeconds < 0 || set.rir.status === 'known' && set.rir.delta < 0 || set.load?.delta > 0 || set.mode.from !== set.mode.to || set.machinePreset && set.machinePreset.from !== set.machinePreset.to || set.machineRmLevel && set.machineRmLevel.from !== set.machineRmLevel.to || set.level && set.level.to > set.level.from || set.targetIntensity && set.targetIntensity.to > set.targetIntensity.from) unsafeOrUnknown = true;
+        if (set.deltaAmount > 0 || set.deltaRestSeconds < 0 || set.rir.status === 'known' && set.rir.delta < 0 || set.load?.delta > 0 || set.mode.from !== set.mode.to || set.machinePreset && set.machinePreset.from !== set.machinePreset.to || set.machineRmLevel && set.machineRmLevel.to < set.machineRmLevel.from || set.level && set.level.to > set.level.from || set.targetIntensity && set.targetIntensity.to > set.targetIntensity.from) unsafeOrUnknown = true;
       }
     }
     const mainReduced = comparison.exercises.some(exercise => exercise.section === 'main' && (
@@ -5767,7 +5837,7 @@ function validateCycleExecutableChanges(input, facts, chargeComparison) {
 // provenance. Exact payload digest separately binds every serialized row.
 function cycleExecutionPlan(plan, sessionId, prepared) {
   const exKeys = ['trainingGoal', 'id', 'entryId', 'section', 'actionLibraryId', 'unilateralPrescription', 'sideTransitionSeconds', 'sideTransitionRationale', 'loadType', 'staticLoadRequested', 'dataStatType', 'movementKind', 'smartRmPresetName', 'smartRmPresetId', 'smartRmActionLibraryId'];
-  const setKeys = ['side', 'unit', 'durationSeconds', 'reps', 'rmLevel', 'level', 'rirTarget', 'intensity', 'weightKg', 'weight', 'weightUnit', 'mode', 'rest', 'calculatedLoad', 'loadUnit'];
+  const setKeys = ['side', 'unit', 'durationSeconds', 'reps', 'rmLevel', 'level', 'rirTarget', 'intensity', 'weightKg', 'weight', 'weightUnit', 'mode', 'rest', 'calculatedLoad', 'loadUnit', 'percent1RM', 'percentResolved'];
   const pick = (object, keys) => Object.fromEntries(keys.filter(key => Object.hasOwn(object, key)).map(key => [key, object[key]]));
   return { name: sessionId, ...(plan.timeBudgetAssessment ? {timeBudgetAssessment:plan.timeBudgetAssessment} : {}), ...(plan.confirmedSessionMinutes === undefined ? {} : {confirmedSessionMinutes:plan.confirmedSessionMinutes}), ...(plan.confirmedWeeklyMinutes === undefined ? {} : {confirmedWeeklyMinutes:plan.confirmedWeeklyMinutes}), ...(plan.supersetBlocks ? { supersetBlocks: cycleJsonClone(plan.supersetBlocks) } : {}), exercises: plan.exercises.map(exercise => ({
     ...pick(exercise, exKeys), title: exercise.title,
@@ -5800,18 +5870,42 @@ function countCycleSerializedRows(payload) {
   }
   return rows;
 }
+/** Cycle deload cap: percent per exercise/set of already normalized sessions, used to cap the deload session's automatic percent. */
+function recordSessionPercents(percentBySession, sessionId, plan) {
+  const percents = new Map();
+  for (const exercise of plan?.exercises ?? []) {
+    if (exercise.loadType !== 'smart-rm' || (exercise.section ?? 'main') !== 'main') continue;
+    (exercise.sets ?? []).forEach((set, index) => { if (set.percentResolved) percents.set(`${exercise.entryId ?? exercise.id}:${index}`, set.percentResolved.percent1RM); });
+  }
+  percentBySession.set(sessionId, percents);
+}
+function deloadPercentCaps(input, sessionId, percentBySession) {
+  const deloadWeek = input?.deload?.week, baselineWeek = input?.deload?.baselineWeek;
+  if (!Number.isSafeInteger(deloadWeek) || !Number.isSafeInteger(baselineWeek) || typeof input.startDate !== 'string' || !Array.isArray(input.occurrences)) return undefined;
+  const start = Date.parse(input.startDate + 'T00:00:00Z');
+  const weekOf = row => Math.floor((Date.parse(row.date + 'T00:00:00Z') - start) / 86400000 / 7) + 1;
+  if (!input.occurrences.some(row => row.sessionId === sessionId && weekOf(row) === deloadWeek)) return undefined;
+  const caps = {};
+  for (const baselineId of new Set(input.occurrences.filter(row => weekOf(row) === baselineWeek).map(row => row.sessionId))) {
+    for (const [key, percent] of percentBySession.get(baselineId) ?? []) caps[key] = Math.min(caps[key] ?? percent, percent);
+  }
+  return Object.keys(caps).length ? caps : undefined;
+}
 async function prepareTrainingCycle(input, profile) {
   const { config, password } = await readProfileConfig(profile);
   const profileFingerprint = profileConfigFingerprint(config, password);
   const stored = await readTrainingProfileRecord(profile);
   const catalog = await currentExerciseCatalog(profile, profileFingerprint);
   const sessions = [];
+  const percentBySession = new Map();
   let payloadBytes = 0;
   for (const session of input.sessions) {
     const importedPolicy=resolveImportedRmPolicy(session.plan,profile,profileFingerprint);
     let normalized, validated;
     try {
-      normalized = { ...normalizePlan({ ...session.plan, intakeAnswers: input.intakeAnswers }, stored?.profileData, catalog,importedPolicy), ...(input.cyclePreferenceReviews?.length ? { cyclePreferenceReviews: input.cyclePreferenceReviews } : {}) };
+      const deloadCaps = deloadPercentCaps(input, session.sessionId, percentBySession);
+      normalized = { ...normalizePlan({ ...session.plan, intakeAnswers: input.intakeAnswers, ...(deloadCaps ? { deloadPercentCaps: deloadCaps } : {}) }, stored?.profileData, catalog,importedPolicy), ...(input.cyclePreferenceReviews?.length ? { cyclePreferenceReviews: input.cyclePreferenceReviews } : {}) };
+      recordSessionPercents(percentBySession, session.sessionId, normalized);
       validated = await validatePlanForProfile(normalized, profile, profileFingerprint, input.intakeAnswers, catalog);
     } catch (error) {
       if (error?.scienceDiagnostics) error.scienceDiagnostics = { ...error.scienceDiagnostics, sessionId: session.sessionId };
@@ -5921,9 +6015,13 @@ async function prepareStreamingSession(raw, index, context) {
   if (decisions.length > 1575) throw new Error('Expanded session decisionEvidence exceeds limit.');
   const expandedPlan = shared.length ? { ...raw.plan, decisionEvidence:decisions } : raw.plan;
   const importedPolicy=resolveImportedRmPolicy(expandedPlan,profile,profileFingerprint);
-  let normalized, validated;
+  let normalized, validated, deloadCaps;
   try {
-    normalized = { ...normalizePlan({ ...expandedPlan, intakeAnswers: index.intakeAnswers }, stored?.profileData, catalog,importedPolicy), ...(index.cyclePreferenceReviews?.length ? { cyclePreferenceReviews: index.cyclePreferenceReviews } : {}) };
+    context.percentBySession ??= new Map();
+    // Regeneration before mutation reuses the caps persisted with the approved session so the digest stays identical.
+    deloadCaps = context.deloadCapsOverride !== undefined ? (context.deloadCapsOverride || undefined) : deloadPercentCaps(index, raw.sessionId, context.percentBySession);
+    normalized = { ...normalizePlan({ ...expandedPlan, intakeAnswers: index.intakeAnswers, ...(deloadCaps ? { deloadPercentCaps: deloadCaps } : {}) }, stored?.profileData, catalog,importedPolicy), ...(index.cyclePreferenceReviews?.length ? { cyclePreferenceReviews: index.cyclePreferenceReviews } : {}) };
+    recordSessionPercents(context.percentBySession, raw.sessionId, normalized);
     validated = await validatePlanForProfile(normalized, profile, profileFingerprint, index.intakeAnswers, catalog);
   } catch (error) {
     if (error?.scienceDiagnostics) error.scienceDiagnostics = { ...error.scienceDiagnostics, sessionId: raw.sessionId };
@@ -5932,7 +6030,7 @@ async function prepareStreamingSession(raw, index, context) {
   const adapterPlan = cloneCycleAdapterPlan(validated.plan);
   const prepared = await prepareProgramPayload(adapterPlan, profile, profileFingerprint);
   const payload = cycleJsonClone(prepared.payload, 1_000_000);
-  return { retainedSource:captureRetainedPortableSource(expandedPlan,adapterPlan,prepared.metadataById), sessionId: raw.sessionId, importedRmPolicyId:raw.plan.importedRmPolicyId??null, importedPlanName:raw.plan.name, plan: { ...validated.plan, timeBudgetAssessment: adapterPlan.timeBudgetAssessment }, executionPlan: cycleExecutionPlan(adapterPlan, raw.sessionId, prepared), payload,
+  return { retainedSource:captureRetainedPortableSource(expandedPlan,adapterPlan,prepared.metadataById), sessionId: raw.sessionId, importedRmPolicyId: raw.plan.importedRmPolicyId??null, importedPlanName:raw.plan.name, ...(deloadCaps ? { deloadPercentCaps: deloadCaps } : {}), plan: { ...validated.plan, timeBudgetAssessment: adapterPlan.timeBudgetAssessment }, executionPlan: cycleExecutionPlan(adapterPlan, raw.sessionId, prepared), payload,
     executionDigest: cycleHash(payload), serializedWorkRows: countCycleSerializedRows(payload), intakeFingerprint: validated.intakeFingerprint,
     displayUnit: prepared.displayUnit ?? null, staticContextDigest: prepared.staticLoadContext.contextDigest, equipmentSafety: validated.equipmentSafety };
 }
@@ -6038,7 +6136,9 @@ async function prepareNativeStreamingCycle(snapshot, profile, accountFingerprint
     for await (const part of access.inputParts()) if (part.kind === 'sessions') for (const item of part.items) if (item.sessionId === sessionId) { if (raw) throw new Error('Ambiguous streamed definition.'); raw = item; }
     if (!raw) throw new Error('Missing streamed definition.');
     const freshContext = await beginStreamingCycle(snapshot.index, profile, accountFingerprint);
-    const fresh = await prepareStreamingSession(raw, snapshot.index, freshContext), old = await access.readPrepared(sessionId);
+    const old = await access.readPrepared(sessionId);
+    freshContext.deloadCapsOverride = old?.deloadPercentCaps ?? false;
+    const fresh = await prepareStreamingSession(raw, snapshot.index, freshContext);
     if (fresh.executionDigest !== old.executionDigest || fresh.intakeFingerprint !== old.intakeFingerprint || fresh.staticContextDigest !== old.staticContextDigest || fresh.plan.resolvedRecoveryContext.contextDigest !== old.plan.resolvedRecoveryContext.contextDigest) throw new Error('Selected streamed definition changed before mutation.');
     if (cycleHash(fresh) !== cycleHash(old)) throw new Error('Full approved scientific definition changed before mutation; retrieve and assess a new complete presentation.');
     return fresh;
@@ -8909,6 +9009,7 @@ async function dispatchWithCoachingMemory(name, args = {}) {
         const assessment = plan.preferenceCompliance;
         return { profile, operationStatus: 'preference-review-preparation', readOnly: true, mutationSent: false, writeReady: false, approvalIssued: false, scientificApproval: false,
           requiredPreferenceReviews: [...assessment.checks, ...assessment.reviews].filter(item => item.status === 'unresolved-review-required').map(item => ({ field: item.field, exerciseIndex: item.exerciseIndex ?? null, scopeDigest: item.scopeDigest, userAnswerRequired: item.requested === 'ask', limitation: item.limitation })),
+          preferenceReviewsSkeleton: { note: 'Szkielet bez oceny: wypełnij decision i rationale po faktycznej ocenie planu wobec tej preferencji i wyślij ten sam plan z preferenceReviews. userConfirmed dodaj tylko po odpowiedzi użytkownika (userAnswerRequired=true). Nie zastępuje oceny ani zgody.', preferenceReviews: [...assessment.checks, ...assessment.reviews].filter(item => item.status === 'unresolved-review-required').map(item => ({ scopeDigest: item.scopeDigest, field: item.field, decision: 'reviewed-compatible', rationale: '', ...(item.requested === 'ask' ? { userAnswerRequired: true } : {}) })) },
           preferenceCompliance: assessment,
           note: 'Read-only scoped preference preparation. Review these exact scopes, then request the ordinary preview without preparePreferenceReviews. This result never authorizes saving.' };
       }
@@ -8979,7 +9080,7 @@ async function dispatchWithCoachingMemory(name, args = {}) {
           ...(exercise.loadType === 'smart-rm' ? { smartRmPresetId: exercise.smartRmPresetId, smartRmPresetName: exercise.smartRmPresetName, smartRmPresetSource: exercise.smartRmPresetSource, actionLibraryId: exercise.smartRmActionLibraryId, accountOneRepMaxReadiness: exercise.smartRmAccountReadiness } : {}),
           ...(exercise.loadType === 'profile-auto' ? { strengthAnchor: { source: exercise.strengthAnchor.source, kind: exercise.resolvedStrengthProfile.approximate === true ? 'estimated-e1RM' : (exercise.strengthAnchor.anchorKind ?? 'unspecified-oneRepMax'), approximate: exercise.resolvedStrengthProfile.approximate === true, ...(exercise.strengthAnchor.actionLibraryId === undefined ? {} : { actionLibraryId: exercise.strengthAnchor.actionLibraryId }), ...(plan.showCalculatedLoads ? { oneRepMax: exercise.resolvedStrengthProfile.value, unit: exercise.resolvedStrengthProfile.unit } : {}) } } : {}),
           ...(exercise.sideTransitionSeconds === undefined ? {} : { sideTransition: { seconds: exercise.sideTransitionSeconds, rationale: exercise.sideTransitionRationale, role: 'operational-side-change-not-recovery', legacyReferenceClientParity: false } }),
-          sets: exercise.sets.map((set) => ({ ...(set.side === undefined || set.side === 0 ? {} : { side: set.side, sideLabel: set.side === 1 ? 'lewa' : 'prawa' }), ...(set.unit === 'sec' ? { unit: 'seconds', durationSeconds: set.durationSeconds } : { unit: 'reps', reps: set.reps }), ...(set.rirTarget === undefined ? {} : { rirTarget: set.rirTarget }), ...(set.intensity === undefined ? {} : { cardioIntensity: set.intensity }), ...(exercise.loadType === 'smart-rm' ? { machinePreset: exercise.smartRmPresetName, loadSelection: 'device-managed-smart-rm', rirDelivery: 'coach-target-not-confirmed-API-field' } : {}), ...(exercise.loadType === 'customize-manual' ? { loadSelection: 'manual Customize', weight: set.weight, weightUnit: set.weightUnit, ...(set.loadStepNormalized ? { requestedWeight: set.requestedWeight, loadStepNormalized: true, loadStepNote: set.loadStepNote } : {}), accountDisplayUnit: displayUnit, ...(set.apiLoadNormalized ? { serializedDisplayWeight: set.serializedDisplayWeight, serializedDisplayUnit: set.serializedDisplayUnit, apiLoadNormalized: true, normalizationMeaning: 'Expected API load after reference client normalization; not measured device resistance' } : {}) } : {}), ...(exercise.loadType === 'fixed-kg' ? { weightKg: set.weightKg, weightUnit: 'kg', accountDisplayUnit: displayUnit } : {}), ...(exercise.loadType === 'profile-auto' ? { loadSelection: 'Customize; static per-set load from exercise-specific 1RM/e1RM and rep-max curve', targetPercent1RM: Math.round(set.loadEstimate.targetPercent1RM * 1000) / 10, ...(plan.showCalculatedLoads ? { weight: set.calculatedLoad, weightUnit: set.loadUnit, ...(set.apiLoadNormalized ? { serializedDisplayWeight: set.serializedDisplayWeight, serializedDisplayUnit: set.serializedDisplayUnit, apiLoadNormalized: true, normalizationMeaning: 'Expected API load after reference client normalization; not measured device resistance' } : {}) } : {}), curveMethod: set.loadEstimate.method, approximate: set.loadEstimate.approximate === true, ...(set.loadEstimate.approximate === true ? { anchorEvidenceSource: set.loadEstimate.anchorEvidenceSource ?? exercise.strengthAnchor.source, ...(set.loadEstimate.workingSetAssumption === undefined ? (set.loadEstimate.workingRir === undefined ? {} : { workingRir: set.loadEstimate.workingRir }) : { workingSetAssumption: set.loadEstimate.workingSetAssumption }) } : {}) } : {}), restSeconds: set.rest, mode: set.mode }))
+          sets: exercise.sets.map((set) => ({ ...(set.side === undefined || set.side === 0 ? {} : { side: set.side, sideLabel: set.side === 1 ? 'lewa' : 'prawa' }), ...(set.unit === 'sec' ? { unit: 'seconds', durationSeconds: set.durationSeconds } : { unit: 'reps', reps: set.reps }), ...(set.rirTarget === undefined ? {} : { rirTarget: set.rirTarget }), ...(set.intensity === undefined ? {} : { cardioIntensity: set.intensity }), ...(exercise.loadType === 'smart-rm' ? { machinePreset: exercise.smartRmPresetName, loadSelection: set.percentResolved ? 'smart-rm-percent-1rm' : 'device-managed-smart-rm', rirDelivery: 'coach-target-not-confirmed-API-field', ...(set.percentResolved ? { percent1RM: set.percentResolved.percent1RM, rmLevel: set.percentResolved.rmLevel, estimatedKg: set.percentResolved.loadKg, loadDisplay: exercise.smartRmPresetName + ' · ' + set.percentResolved.percent1RM + '% 1RM' + (set.percentResolved.loadKg == null ? ' · kg dobierze Speediance' : ' ≈ ' + set.percentResolved.loadKg + ' kg'), percentLoadRationale: set.percentResolved.preview } : {}) } : {}), ...(exercise.loadType === 'customize-manual' ? { loadSelection: 'manual Customize', weight: set.weight, weightUnit: set.weightUnit, ...(set.loadStepNormalized ? { requestedWeight: set.requestedWeight, loadStepNormalized: true, loadStepNote: set.loadStepNote } : {}), accountDisplayUnit: displayUnit, ...(set.apiLoadNormalized ? { serializedDisplayWeight: set.serializedDisplayWeight, serializedDisplayUnit: set.serializedDisplayUnit, apiLoadNormalized: true, normalizationMeaning: 'Expected API load after reference client normalization; not measured device resistance' } : {}) } : {}), ...(exercise.loadType === 'fixed-kg' ? { weightKg: set.weightKg, weightUnit: 'kg', accountDisplayUnit: displayUnit } : {}), ...(exercise.loadType === 'profile-auto' ? { loadSelection: 'Customize; static per-set load from exercise-specific 1RM/e1RM and rep-max curve', targetPercent1RM: Math.round(set.loadEstimate.targetPercent1RM * 1000) / 10, ...(plan.showCalculatedLoads ? { weight: set.calculatedLoad, weightUnit: set.loadUnit, ...(set.apiLoadNormalized ? { serializedDisplayWeight: set.serializedDisplayWeight, serializedDisplayUnit: set.serializedDisplayUnit, apiLoadNormalized: true, normalizationMeaning: 'Expected API load after reference client normalization; not measured device resistance' } : {}) } : {}), curveMethod: set.loadEstimate.method, approximate: set.loadEstimate.approximate === true, ...(set.loadEstimate.approximate === true ? { anchorEvidenceSource: set.loadEstimate.anchorEvidenceSource ?? exercise.strengthAnchor.source, ...(set.loadEstimate.workingSetAssumption === undefined ? (set.loadEstimate.workingRir === undefined ? {} : { workingRir: set.loadEstimate.workingRir }) : { workingSetAssumption: set.loadEstimate.workingSetAssumption }) } : {}) } : {}), restSeconds: set.rest, mode: set.mode }))
         })),
           showCalculatedLoads: plan.showCalculatedLoads,
           scheduleDate: plan.scheduleDate || null,

@@ -90,3 +90,7 @@ bash install-linux.sh --uninstall   # Linux
 ```
 
 Odinstalowanie usuwa plugin i tunel. Dane konta zostają na komputerze. Żeby usunąć także je, dodaj `-RemoveData` na Windows albo `--remove-data` na macOS/Linux. Klucz tunelu unieważnij osobno na platform.openai.com.
+
+## Aktualizacja bez ponownej instalacji
+
+Masz już GM Coach? Pobierz małą paczkę `GM-Coach-<wersja>-codex-updater.zip` i uruchom w niej `UPDATE-WINDOWS.cmd` (macOS/Linux: `bash update-macos-linux.sh`). Aktualizator podmienia tylko pliki pluginu, zachowuje Node, speediance-cli, dane, hasło i ustawienia tunelu, robi kopię zapasową i sam przywraca poprzednią wersję przy błędzie. Szczegóły: README-AKTUALIZACJA.md w paczce.

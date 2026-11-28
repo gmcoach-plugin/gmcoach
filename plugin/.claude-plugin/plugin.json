@@ -1,0 +1,20 @@
+{
+  "name": "gm-coach",
+  "version": "1.0.692",
+  "description": "Local coaching plugin for Speediance Gym Monster: workout history, training plans and research-backed coaching.",
+  "author": {
+    "name": "GM Coach contributors"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/gmcoach-plugin/gmcoach",
+  "repository": "https://github.com/gmcoach-plugin/gmcoach",
+  "keywords": [
+    "speediance",
+    "gym-monster",
+    "strength-training",
+    "fitness",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.claude-mcp.json"
+}

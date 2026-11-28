@@ -1107,6 +1107,7 @@ Przed pierwszym wywołaniem nieznanego narzędzia przeczytaj jego sekcję. Kolej
 ```
 
 - **Typowe błędy:** Smart RM: podaj cel/preset, reps, rirTarget, mode, restSeconds — bez rmLevel/1RM. limit 1–100, paginacja offset.
+- **%1RM (zawsze):** każda seria Smart RM niesie procent (counterweight2 + percent1rmStr); serwer dobiera go z reps+RIR w zakresie presetu, percentLoad.oneRepMax {value, unit:kg, source} dodaje szacowane kg, percent1RM na serii nadpisuje (różny od auto wymaga percentReason). Bez 1RM kg dobiera Speediance.
 - **Następny krok:** Skopiuj value do decisionEvidence; target: plan | exercise:N | set:N:M | warmup:N | stretch:N.
 
 ### gm_coach_prepare_evidence_pack

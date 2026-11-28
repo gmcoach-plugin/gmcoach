@@ -10,9 +10,9 @@ const fields = {
   setsAndReps: 'dose', completionMethod: 'dose', selectCompletionMethod: 'dose', countType: 'dose', leftRight: 'dose',
   breakTime: 'rest', breakTime2: 'rest', sportMode: 'resistance_mode',
   templatePresetId: 'load', presetId: 'load', templatePresetName: 'load', presetName: 'load', templatePreset: 'load', preset: 'load',
-  weights: 'load', counterweight: 'load', counterweight2: 'load', level: 'load', capacity: 'load'
+  weights: 'load', counterweight: 'load', counterweight2: 'load', percent1rmStr: 'load', level: 'load', capacity: 'load'
 };
-const csv = new Set(['setsAndReps', 'completionMethod', 'selectCompletionMethod', 'countType', 'leftRight', 'breakTime', 'breakTime2', 'sportMode', 'weights', 'counterweight', 'counterweight2', 'level']);
+const csv = new Set(['setsAndReps', 'completionMethod', 'selectCompletionMethod', 'countType', 'leftRight', 'breakTime', 'breakTime2', 'sportMode', 'weights', 'counterweight', 'counterweight2', 'percent1rmStr', 'level']);
 const optionalPresetAliases = new Set(['presetId', 'templatePresetName', 'presetName', 'templatePreset', 'preset']);
 const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
 function comparable(value, field) {

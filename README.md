@@ -5,11 +5,15 @@
 <h1 align="center">GM Coach</h1>
 
 <p align="center">
-  An AI coaching plugin for the Speediance Gym Monster (GM1 and GM2). It plans strength training in Codex, ChatGPT and Claude from your own workout history and current research.
+  An AI coaching plugin for the Speediance Gym Monster. It plans strength training in Codex, ChatGPT and Claude from your own workout history and current research.
 </p>
 
 <p align="center">
   <b>English</b> · <a href="README.pl.md">Polski</a>
+</p>
+
+<p align="center">
+  <a href="#install-with-one-command"><b>Install with one command (Codex / Claude)</b></a>
 </p>
 
 <p align="center">
@@ -76,6 +80,29 @@ When the plan is ready, GM Coach shows the full workout, explains its choices an
   <img src="docs/gm-coach-plan-approval.png" alt="GM Coach showing a complete Saturday workout with Eccentric mode, ready for approval" width="640">
 </p>
 
+## What's new in 1.0.692
+
+- **One-command install** in Codex and Claude (see [Install with one command](#install-with-one-command)).
+- **%1RM in Smart RM:** the percentage is chosen automatically for your goal, shown on every set, can differ between sets of one exercise, and is kept in import and export.
+- **Warm-ups:** Smart RM is used for warm-ups from 50% 1RM; lighter warm-ups use Customize.
+- **Techniques:** warm-up with weight, supersets and drop sets are added only when they help your goal or your time.
+- **Health data:** GM Coach asks once whether to use your Speediance health data, and the health report is improved (body measurements, sleep with stages, night heart rate, biological age).
+- **Resistance modes:** a hint for choosing Eccentric and Chain modes.
+- **Faster plan creation.**
+- **Updaters:** a small package updates the plugin without downloading everything again.
+
+## How progression works
+
+GM Coach plans progression from your own history, week by week, and checks it against research before anything is saved.
+
+- **Week to week:** each week can change reps, sets, load or %1RM. The plan shows every change and compares each week with the previous working week.
+- **RIR (reps in reserve):** the planned number of reps you should leave in the tank, from 0 to 5. It is set separately from the reps and is not used for timed sets.
+- **Automatic %1RM in Smart RM:** the percentage comes from reps plus RIR (for example 10 reps at RIR 2 gives 70%) and is kept inside the preset range: Gain Muscle 50–90%, Stamina 50–70%, Strength 50–90%. You can set a different percentage for a set, with a short reason.
+- **Deload:** a deload week must reduce the planned dose compared with a working week, and its automatic %1RM is never higher than the baseline week's. Its timing is chosen for you individually, not fixed to a calendar.
+- **Your history:** loads and sets come from your completed sessions, read only with your permission. Without history, GM Coach asks instead of guessing.
+- **Health data (optional):** GM Coach asks once per conversation whether to use your Speediance health data. If you decline, it plans from your history and your own feedback.
+- **Science check:** every real plan goes through a research check before saving, unless you turn it off for that plan.
+
 ## Supported apps
 
 | App | Platform | Installation guide |
@@ -83,6 +110,25 @@ When the plan is ready, GM Coach shows the full workout, explains its choices an
 | Codex (optionally ChatGPT through a secure tunnel) | Windows; macOS and Linux experimental | [English](installer/codex/README-INSTALL-EN.md) · [Polski](installer/codex/README-INSTALACJA.md) |
 | Claude (desktop app and Claude Code) | Windows; macOS and Linux experimental | [English](installer/claude/README-CLAUDE-EN.md) · [Polski](installer/claude/README-CLAUDE.md) |
 
+## Install with one command
+
+Requires [Node.js 24](https://nodejs.org/). Run the commands for your app, then open a new chat.
+
+**Codex**
+
+```
+codex plugin marketplace add gmcoach-plugin/gmcoach
+codex plugin add gm-coach@gm-coach
+```
+
+**Claude**
+
+```
+claude plugin marketplace add gmcoach-plugin/gmcoach
+claude plugin install gm-coach@gm-coach
+```
+
+On first start GM Coach downloads its helper files (checked with SHA-256) into a per-user folder. No tunnel is needed; a tunnel is only used for ChatGPT.
 ## Quick start
 
 1. Download the installer for your app from the [latest release](https://github.com/gmcoach-plugin/gmcoach/releases/latest).
@@ -92,7 +138,11 @@ When the plan is ready, GM Coach shows the full workout, explains its choices an
 
 You need a Speediance account and a Gym Monster. See the installation guide for macOS, Linux, updates and uninstalling.
 
-**Tested devices:** Gym Monster **GM1** and **GM2**.
+**Tested devices:** Tested on GM1 and GM2. GM3: experimental, not yet tested.
+
+## Updating
+
+Use the updater for your app: [Codex](installer/updater/codex/README-UPDATE-EN.md) · [Claude](installer/updater/claude/README-CLAUDE-UPDATE-EN.md) (all files are in [installer/updater](installer/updater)). The updater is a small package and does not download everything again. Tested on Windows; macOS and Linux are experimental.
 
 ## Manual installation (advanced)
 

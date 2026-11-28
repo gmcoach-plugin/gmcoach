@@ -30,6 +30,7 @@ program-payload.mjs
 imported-rm-selector-policy.mjs
 tests/imported-rm-selector-policy.test.mjs
 program-serialization.mjs
+percent-1rm.mjs
 superset-serialization.mjs
 consecutive-day-variety.mjs
 warmup-load-policy.mjs
@@ -55,6 +56,7 @@ training-volume.mjs
 workout-data.mjs
 session-recovery.mjs
 credential-store.mjs
+runtime-bootstrap.mjs
 profile-secret-storage.mjs
 account-readiness.mjs
 coaching-profile.mjs
@@ -85,6 +87,7 @@ scripts/install-codex-desktop.command
 tests/injury-safety.test.mjs
 tests/equipment-plan-safety.test.mjs
 tests/installer-cleanup.test.mjs
+tests/runtime-bootstrap.test.mjs
 tests/saved-template-list.test.mjs
 tests/saved-template-page-observation.test.mjs
 tests/training-volume.test.mjs

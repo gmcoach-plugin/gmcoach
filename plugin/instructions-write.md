@@ -44,3 +44,12 @@ Wymagaj trwałego `quickTestSession: true` w notatce programu. Dla lokalnej nota
 
 Jeżeli Speediance jawnie zgłosi brak miejsca, odczytaj pełną listę własnych szablonów i podaj konkretną liczbę miejsc do zwolnienia tylko wtedy, gdy limit konta jest potwierdzony. Zaproponuj nazwy i kody kandydatów; nazwij je najstarszymi tylko przy wiarygodnej dacie utworzenia z API. Nie sortuj po ID, kolejności listy ani dacie rezerwacji. Po wskazaniu przez użytkownika dokładnych szablonów pobierz świeży szczegół i baseDigest każdego, wywołaj speediance_delete_saved_program z confirm=true, potwierdź usunięcie odczytem i dopiero potem przygotuj świeży podgląd nowego planu. Nie kasuj automatycznie i nie traktuj niepewnego wyniku wcześniejszego POST jako dowodu braku szablonu; najpierw uzgodnij jego znacznik. Przy statusie limitu unknown nie deklaruj, że konto jest pełne.
 
+## Smart RM: procent zawsze
+
+Każda seria Smart RM niesie procent jak w aplikacji (counterweight2 = poziom RM, percent1rmStr = %); serwer dobiera go sam z reps + RIR (poziom = reps + RIR, np. 10 powt./RIR 2 → 70%), w zakresie presetu (Gain Muscle 50–90, Stamina 50–70, Strength 50–90) i wartości z tabeli. Cel, doświadczenie, historia i regeneracja działają przez reps/RIR; nie wymyślaj % osobno i nie podawaj poziomu RM. Znasz 1RM (kg) ćwiczenia, który i tak masz z odczytanych statystyk lub od użytkownika? Dodaj `percentLoad: {oneRepMax: {value, unit: "kg", source}}` (source: user-confirmed-one-rep-max, speediance-reported, local-training-profile, speediance-estimated) — podgląd pokaże szacowane kg (nie pomiar). Bez 1RM: sam procent, „kg dobierze Speediance”; nie pobieraj statystyk tylko po to.
+
+Ręczne `percent1RM` na serii ma pierwszeństwo. Różne % w jednym ćwiczeniu (wprowadzająca, piramida, top set + back-off, progresja) są dozwolone; każdy różny od automatycznego wymaga `percentReason` (≤200 znaków, pokazywany w podglądzie).
+
+Pokazuj % przy każdej serii wszędzie, np. „Gain Muscle · 70% 1RM ≈ 30 kg” lub „… · kg dobierze Speediance”; serii o różnym % nie grupuj; pod tabelą percentLoadNotes. Odczyt szablonu pokazuje % per seria z percent1rmStr.
+
+Rozgrzewka z oporem: Smart RM od 50% (każda seria percent1RM ≥ 50 + percentReason) albo Customize z kg, gdy 50% to za dużo (ok. 30–45%, mobilizacja): 1RM × %, wartość z historii lub lekki ciężar z uzasadnieniem. Wybór uzasadnij zdaniem w podglądzie.

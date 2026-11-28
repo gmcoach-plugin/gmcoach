@@ -70,6 +70,7 @@ export function buildPresetPayload(plan, metadataById, deviceType, displayUnit, 
       staticLoadProtocol, fixedKgAuthorized: exercise.fixedKgAuthorized === true, staticLoadRequested: exercise.staticLoadRequested === true,
       strengthAnchor: exercise.strengthAnchor,
       smartRmPresetName: exercise.smartRmPresetName,
+      percentLoad: exercise.loadType === 'smart-rm' && apiSets.length > 0 && apiSets.every(set => set.percentResolved),
       exerciseContext: { title: exercise.title, movementKind: exercise.movementKind, dataStatType: exercise.dataStatType },
       ...(displayUnit ? { displayUnit } : {})
     });
@@ -103,6 +104,8 @@ export function buildPresetPayload(plan, metadataById, deviceType, displayUnit, 
       weights: loadPayload.weights,
       counterweight: loadPayload.counterweight,
       counterweight2: loadPayload.counterweight2,
+      // %1RM: the API derives the displayed percent (and recomputes weights) from percent1rmStr; without it, it falls back to the level curve (level 12 -> 67%).
+      ...(loadPayload.percent1rmStr ? { percent1rmStr: loadPayload.percent1rmStr } : {}),
       level: exercise.loadType === 'vita' ? loadPayload.level : apiSets.map(() => '0').join(','),
       capacity: loadPayload.capacity
     });

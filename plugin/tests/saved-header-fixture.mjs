@@ -1,5 +1,0 @@
-import {presentSavedRead} from '../saved-presentation.mjs';
-import {captureSavedPresetDisplayArguments,readSavedPresetDisplayPage} from '../saved-preset-display-page.mjs';
-import {withSavedPresetReadScope,withSavedPresetCatalogRead,savedPresetReadActive,assertSavedPresetReadHealthy,rememberSavedPresetReadFailure,assertSavedPresetReadRequest} from '../saved-preset-read-scope.mjs';
-import { withSavedHeaderDiagnosticScope, assertSavedHeaderRequestScope, savedHeaderRecoveryDisabled, captureSavedResponseHeader, retainSavedResponseHeader, projectSavedResponseHeader, projectSavedNativeStaticDisplay } from '../saved-response-header-diagnostics.mjs';
-export function installSavedHeaderFixture(context={}) { return {presentSavedRead,captureSavedPresetDisplayArguments,readSavedPresetDisplayPage,withSavedPresetReadScope,withSavedPresetCatalogRead,savedPresetReadActive,assertSavedPresetReadHealthy,rememberSavedPresetReadFailure,assertSavedPresetReadRequest,withSavedHeaderDiagnosticScope,assertSavedHeaderRequestScope,savedHeaderRecoveryDisabled,captureSavedResponseHeader,retainSavedResponseHeader,projectSavedResponseHeader,projectSavedNativeStaticDisplay,...context}; }

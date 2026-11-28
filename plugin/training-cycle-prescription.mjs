@@ -9,7 +9,7 @@ const hash = value => createHash('sha256').update(JSON.stringify(value)).digest(
 // Stable prescribed execution/coaching fields only. Anchor source, timestamps,
 // research batches and account readiness are provenance, retained in planDigest.
 const executionExerciseFields = ['trainingGoal', 'id', 'entryId', 'actionLibraryId', 'section', 'unilateralPrescription', 'sideTransitionSeconds', 'sideTransitionRationale', 'loadType', 'staticLoadRequested', 'dataStatType', 'movementKind', 'smartRmPresetName', 'smartRmPresetId', 'smartRmActionLibraryId'];
-const executionSetFields = ['side', 'unit', 'durationSeconds', 'reps', 'rmLevel', 'level', 'rirTarget', 'intensity', 'loadEstimate', 'weightKg', 'weight', 'weightUnit', 'mode', 'rest', 'calculatedLoad', 'loadUnit'];
+const executionSetFields = ['side', 'unit', 'durationSeconds', 'reps', 'rmLevel', 'level', 'rirTarget', 'intensity', 'loadEstimate', 'weightKg', 'weight', 'weightUnit', 'mode', 'rest', 'calculatedLoad', 'loadUnit', 'percent1RM', 'percentResolved'];
 const pick = (value, keys) => Object.fromEntries(keys.filter(key => Object.hasOwn(value, key)).map(key => [key, value[key]]));
 function executionSignature(plan) {
   return { exercises: plan.exercises.map(exercise => ({ ...pick(exercise, executionExerciseFields), sets: exercise.sets.map(set => pick(set, executionSetFields)) })), supersetBlocks: plan.supersetBlocks ?? [] };
@@ -57,7 +57,7 @@ function validateLoad(exercise, set) {
   if (type === 'smart-rm') {
     const rules = getReferenceClientRmPresetRules(exercise.smartRmPresetName);
     if (!rules || set.unit !== 'reps' || getReferenceClientRmPresetByName(exercise.smartRmPresetName)?.id !== exercise.smartRmPresetId || !Number.isSafeInteger(set.rirTarget) || set.reps < rules.minReps || set.reps > rules.maxReps) throw new Error('Invalid Smart RM prescription.');
-    validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: exercise.smartRmPresetName });
+    validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: exercise.smartRmPresetName }, { allowPercentLevel: Boolean(set.percentResolved) });
   }
   if (type === 'profile-auto') {
     const estimate = set.loadEstimate, anchor = exercise.strengthAnchor;
@@ -117,7 +117,7 @@ function prescriptionSummary(plan) {
       amount: set.unit === 'reps' ? set.reps : set.durationSeconds,
       side: set.side ?? 'unknown', mode: set.mode, restSeconds: set.rest,
       ...(set.rirTarget === undefined ? {} : { rirTarget: set.rirTarget }),
-      ...(exercise.loadType === 'smart-rm' ? { rmLevel: validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: exercise.smartRmPresetName }).rmLevel } : {}),
+      ...(exercise.loadType === 'smart-rm' ? { rmLevel: validateReferenceClientRmLevel({ rmLevel: set.rmLevel, reps: set.reps, presetName: exercise.smartRmPresetName }, { allowPercentLevel: Boolean(set.percentResolved) }).rmLevel } : {}),
       ...(exercise.loadType === 'fixed-kg' ? { prescribedLoad: { value: set.weightKg, unit: 'kg' } } : {}),
       ...(exercise.loadType === 'customize-manual' ? { prescribedLoad: { value: set.weight, unit: set.weightUnit } } : {}),
       ...(exercise.loadType === 'profile-auto' ? { prescribedLoad: { value: set.calculatedLoad, unit: set.loadUnit } } : {}),

@@ -3,6 +3,9 @@
 // (ćwiczenie główne tej samej partii w planie).
 const UNLOADED = new Set(['bodyweight', 'vita', 'cardio', 'none', 'band', 'stretch']);
 export const WARMUP_LOAD_FRACTION = 0.45;
+/** Warmup Smart RM is allowed only as an explicit, justified percent of at least 50% (preset floor); lighter warmups stay Customize kg. */
+export const isPercentSmartRmWarmup = (e) => e?.loadType === 'smart-rm' && Array.isArray(e.sets) && e.sets.length > 0 &&
+  e.sets.every((s) => Number.isInteger(s?.percent1RM) && s.percent1RM >= 50 && typeof s.percentReason === 'string' && s.percentReason.trim().length > 0);
 const round = (v) => Math.max(1, Math.round(v * 2) / 2);
 const working = (e) => { const w = (e.sets ?? []).map((s) => s.weight ?? s.weightKg ?? s.calculatedLoad).filter((v) => Number.isFinite(v) && v > 0); return w.length ? Math.max(...w) : null; };
 const explicitSideLoads = (exercise) => {
@@ -48,6 +51,7 @@ export function enforceWarmupLoads(plan, { history = new Map() } = {}) {
     const isWarmup = e.section === 'warmup';
     const loaded = isWarmup && !UNLOADED.has(e.loadType) && (e.loadType === 'smart-rm' || e.loadType === 'customize-manual' || e.loadType === 'fixed-kg' || e.loadType === 'profile-auto');
     if (!loaded) return e;
+    if (isPercentSmartRmWarmup(e)) return e;
     const okCustomize = validManualWarmup(e);
     if (okCustomize) return e;
     const id = e.groupId ?? e.id;
@@ -91,7 +95,7 @@ export function enforceWarmupLoads(plan, { history = new Map() } = {}) {
 }
 
 export function auditWarmupLoads(plan) {
-  const issues = (plan?.exercises ?? []).filter((e) => e.section === 'warmup' && (e.loadType === 'smart-rm' || ((e.loadType === 'customize-manual') && (e.sets ?? []).some((s) => !(s.weight > 0)))))
+  const issues = (plan?.exercises ?? []).filter((e) => e.section === 'warmup' && !isPercentSmartRmWarmup(e) && (e.loadType === 'smart-rm' || ((e.loadType === 'customize-manual') && (e.sets ?? []).some((s) => !(s.weight > 0)))))
     .map((e) => ({ code: 'warmup_load_not_customize', entryId: e.entryId ?? e.id, loadType: e.loadType, fix: 'Rozgrzewka z ciężarem: Customize, stały lekki ciężar 40–50% roboczego.' }));
   return { status: issues.length ? 'warning' : 'ok', issues };
 }
